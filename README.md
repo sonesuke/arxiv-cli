@@ -13,6 +13,16 @@ A Rust-based command-line tool for searching and fetching papers from arXiv. It 
 - **Robust formatting**: Uses structured JSON for easy machine consumption.
 
 ## Installation
+
+### From Release (Recommended)
+You can download the pre-built binaries from the [releases page](https://github.com/sonesuke/arxiv-cli/releases).
+
+1. Download the archive for your OS.
+2. Extract the archive.
+3. Move the binary to a location in your `PATH` (e.g. `/usr/local/bin`).
+
+### From Source (Cargo)
+If you have Rust installed, you can build from source:
 ```bash
 cargo install --path .
 ```
