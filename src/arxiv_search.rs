@@ -36,7 +36,6 @@ impl ArxivClient {
             let ws_url = self.browser.new_page().await?;
             let tab = CdpPage::new(&ws_url).await?;
 
-
             let url = Self::build_search_url(query, start, &after, &before);
 
             tab.goto(&url).await?;

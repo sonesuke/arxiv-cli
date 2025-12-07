@@ -47,8 +47,6 @@ impl CdpPage {
         Ok(false)
     }
 
-
-
     /// Evaluate JavaScript and return the result
     pub async fn evaluate(&self, script: &str) -> Result<Value> {
         let result = self
