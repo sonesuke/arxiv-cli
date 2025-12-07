@@ -80,6 +80,7 @@ impl CdpBrowser {
                         }
 
                         if line.contains("DevTools listening on") {
+                            #[allow(clippy::collapsible_if)]
                             if let Some(port_str) = line.split("127.0.0.1:").nth(1) {
                                 if let Some(port_num) = port_str.split('/').next() {
                                     if let Ok(p) = port_num.parse::<u16>() {
