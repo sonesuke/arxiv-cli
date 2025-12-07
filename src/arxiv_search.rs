@@ -74,6 +74,7 @@ impl ArxivClient {
             start += chunk_size;
         }
 
+        #[allow(clippy::collapsible_if)]
         if let Some(n) = limit {
             if all_papers.len() > n {
                 all_papers.truncate(n);
