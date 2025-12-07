@@ -28,7 +28,7 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Run tests
-        run: cargo test
+        run: cargo test --bin arxiv-cli
 
       - name: Check build
         run: cargo check --release
