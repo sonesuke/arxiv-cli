@@ -9,7 +9,10 @@ pub struct ArxivClient {
 
 impl ArxivClient {
     pub async fn new(config: &Config) -> Result<Self> {
-        let browser = CdpBrowser::launch(None, vec![], config.headless, false).await?;
+        let args = vec![
+            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ];
+        let browser = CdpBrowser::launch(None, args, config.headless, false).await?;
         Ok(Self { browser })
     }
 
@@ -42,7 +45,7 @@ impl ArxivClient {
             // Wait for results to load or check if no results
             // We wait for the specific list item class or no results message?
             // google-patent-cli uses wait_for_element with loop
-            if !tab.wait_for_element("li.arxiv-result", 10).await? {
+            if !tab.wait_for_element("li.arxiv-result", 30).await? {
                 break; // No more results found or timeout
             }
 
