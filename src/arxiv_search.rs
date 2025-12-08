@@ -12,7 +12,8 @@ impl ArxivClient {
         let args = vec![
             "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         ];
-        let browser = CdpBrowser::launch(None, args, config.headless, false).await?;
+        let browser_path = config.browser_path.as_ref().map(std::path::PathBuf::from);
+        let browser = CdpBrowser::launch(browser_path, args, config.headless, false).await?;
         Ok(Self { browser })
     }
 
