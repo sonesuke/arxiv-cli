@@ -64,7 +64,28 @@ arxiv-cli search --query "AI" --head
 
 ## Configuration
 This tool relies on a compatible Chrome/Chromium installation for scraping.
-Config file location: `~/.config/arxiv-cli/config.toml` (created on first run).
+Config file location:
+- macOS: `~/Library/Application Support/com.sonesuke.arxiv-cli/config.json`
+- Linux: `~/.config/arxiv-cli/config.json`
+- Windows: `C:\Users\{User}\AppData\Roaming\sonesuke\arxiv-cli\config\config.json`
+
+### Manage Configuration
+You can manage the configuration via CLI:
+
+```bash
+# List current configuration
+arxiv-cli config list
+
+# Set a value
+arxiv-cli config set headless false
+arxiv-cli config set browser_path "/usr/bin/google-chrome"
+
+# Get a value
+arxiv-cli config get headless
+
+# Show config file path
+arxiv-cli config path
+```
 
 ## Implementation Details
 - **Stack**: Rust, Clap, Headless Chrome, Serde, Reqwest, PDF-Extract.

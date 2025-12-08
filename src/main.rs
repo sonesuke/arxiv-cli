@@ -48,13 +48,57 @@ enum Commands {
         #[arg(long)]
         raw: bool,
     },
+    /// Configuration management
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum ConfigCommands {
+    /// Set a config value
+    Set { key: String, value: String },
+    /// Get a config value
+    Get { key: String },
+    /// List all config values
+    List,
+    /// Show config file path
+    Path,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    let config = Config { headless: !cli.head };
+    let mut config = Config::load()?;
+
+    if let Commands::Config { command } = &cli.command {
+        match command {
+            ConfigCommands::Set { key, value } => {
+                config.set(key, value)?;
+                config.save()?;
+                println!("Config updated: {} = {}", key, value);
+            }
+            ConfigCommands::Get { key } => {
+                let value = config.get(key)?;
+                println!("{}", value);
+            }
+            ConfigCommands::List => {
+                let json = serde_json::to_string_pretty(&config)?;
+                println!("{}", json);
+            }
+            ConfigCommands::Path => {
+                let path = Config::config_path()?;
+                println!("{}", path.display());
+            }
+        }
+        return Ok(());
+    }
+
+    if cli.head {
+        config.headless = false;
+    }
 
     let client = ArxivClient::new(&config).await?;
 
@@ -75,6 +119,7 @@ async fn main() -> anyhow::Result<()> {
                 println!("{}", json);
             }
         }
+        Commands::Config { .. } => unreachable!(),
     }
 
     Ok(())
