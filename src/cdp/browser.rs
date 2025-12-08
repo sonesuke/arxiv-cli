@@ -190,7 +190,6 @@ impl CdpBrowser {
             .map(String::from)
             .ok_or_else(|| anyhow!("Could not find webSocketDebuggerUrl for new page"))
     }
-
 }
 
 impl Drop for CdpBrowser {

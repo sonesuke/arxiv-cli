@@ -58,14 +58,9 @@ enum Commands {
 #[derive(Subcommand)]
 enum ConfigCommands {
     /// Set a config value
-    Set {
-        key: String,
-        value: String,
-    },
+    Set { key: String, value: String },
     /// Get a config value
-    Get {
-        key: String,
-    },
+    Get { key: String },
     /// List all config values
     List,
     /// Show config file path

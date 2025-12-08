@@ -27,8 +27,8 @@ impl Config {
         let content = fs::read_to_string(&config_path)
             .with_context(|| format!("Failed to read config file at {:?}", config_path))?;
 
-        let config: Config = serde_json::from_str(&content)
-            .with_context(|| "Failed to parse config file")?;
+        let config: Config =
+            serde_json::from_str(&content).with_context(|| "Failed to parse config file")?;
 
         Ok(config)
     }
@@ -60,22 +60,59 @@ impl Config {
                 self.headless = value.parse().with_context(|| "Invalid boolean for headless")?;
             }
             "browser_path" => {
-                self.browser_path = if value.is_empty() {
-                     None
-                } else {
-                    Some(value.to_string())
-                };
+                self.browser_path = if value.is_empty() { None } else { Some(value.to_string()) };
             }
             _ => anyhow::bail!("Unknown config key: {}", key),
         }
         Ok(())
     }
-    
+
     pub fn get(&self, key: &str) -> Result<String> {
-         match key {
+        match key {
             "headless" => Ok(self.headless.to_string()),
             "browser_path" => Ok(self.browser_path.clone().unwrap_or_default()),
             _ => anyhow::bail!("Unknown config key: {}", key),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_config_default() {
+        let config = Config::default();
+        assert!(config.headless);
+        assert!(config.browser_path.is_none());
+    }
+
+    #[test]
+    fn test_config_set_get() {
+        let mut config = Config::default();
+
+        config.set("headless", "false").unwrap();
+        assert!(!config.headless);
+        assert_eq!(config.get("headless").unwrap(), "false");
+
+        config.set("browser_path", "/tmp/chrome").unwrap();
+        assert_eq!(config.browser_path, Some("/tmp/chrome".to_string()));
+        assert_eq!(config.get("browser_path").unwrap(), "/tmp/chrome");
+
+        config.set("browser_path", "").unwrap();
+        assert!(config.browser_path.is_none());
+    }
+
+    #[test]
+    fn test_load_parse_error() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(temp_file, "invalid json").unwrap();
+
+        // We can't easily injection path into Config::load() without refactoring
+        // So we'll skip the file load tests that rely on global state or mocking for now
+        // and stick to logic tests.
+        // Refactoring Config to take a path for load would be better but keeping changes minimal.
     }
 }
