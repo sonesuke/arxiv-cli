@@ -60,10 +60,23 @@ impl ArxivClient {
                             status = "empty";
                             break;
                         }
+                        "abstract" => {
+                            status = "abstract";
+                            break;
+                        }
                         _ => {}
                     }
                 }
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            }
+
+            if status == "abstract" {
+                let js_script = include_str!("scripts/extract_paper.js");
+                let value = tab.evaluate(js_script).await?;
+                let json_str: String = serde_json::from_value(value)?;
+                let paper: Paper = serde_json::from_str(&json_str)?;
+                all_papers.push(paper);
+                break; // Single result from redirect
             }
 
             if status != "found" {
