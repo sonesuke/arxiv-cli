@@ -43,10 +43,31 @@ impl ArxivClient {
             // tab.wait_until_navigated()?; // CDP helper doesn't have this, wait for element instead
 
             // Wait for results to load or check if no results
-            // We wait for the specific list item class or no results message?
-            // google-patent-cli uses wait_for_element with loop
-            if !tab.wait_for_element("li.arxiv-result", 30).await? {
-                break; // No more results found or timeout
+            // Use a custom wait loop to detect "no results" message quickly
+            let wait_script = include_str!("scripts/check_search_results.js");
+
+            let mut status = "timeout";
+            let start_time = std::time::Instant::now();
+            while start_time.elapsed().as_secs() < 60 {
+                let val = tab.evaluate(wait_script).await?;
+                if let Some(s) = val.as_str() {
+                    match s {
+                        "found" => {
+                            status = "found";
+                            break;
+                        }
+                        "empty" => {
+                            status = "empty";
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            }
+
+            if status != "found" {
+                break; // No more results found, empty, or timeout
             }
 
             let js_script = include_str!("scripts/extract_search_results.js");
@@ -232,5 +253,15 @@ mod tests {
     fn test_build_fetch_url_full_url() {
         let url = ArxivClient::build_fetch_url("https://arxiv.org/abs/2512.04518");
         assert_eq!(url, "https://arxiv.org/abs/2512.04518");
+    }
+
+    #[test]
+    fn test_build_search_url_with_before_only() {
+        let before = Some("2023-10-13".to_string());
+        let url = ArxivClient::build_search_url("conversational data analysis", 0, &None, &before);
+        assert!(url.contains("date-filter_by=date_range"));
+        assert!(url.contains("date-from_date=&"));
+        assert!(url.contains("date-to_date=2023-10-13"));
+        assert!(url.contains("terms-0-term=conversational%20data%20analysis"));
     }
 }
