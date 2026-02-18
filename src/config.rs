@@ -5,14 +5,11 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub headless: bool,
-    pub browser_path: Option<String>,
-}
+pub struct Config {}
 
 impl Default for Config {
     fn default() -> Self {
-        Self { headless: true, browser_path: None }
+        Self {}
     }
 }
 
@@ -54,23 +51,14 @@ impl Config {
         Ok(project_dirs.config_dir().join("config.json"))
     }
 
-    pub fn set(&mut self, key: &str, value: &str) -> Result<()> {
+    pub fn set(&mut self, key: &str, _value: &str) -> Result<()> {
         match key {
-            "headless" => {
-                self.headless = value.parse().with_context(|| "Invalid boolean for headless")?;
-            }
-            "browser_path" => {
-                self.browser_path = if value.is_empty() { None } else { Some(value.to_string()) };
-            }
             _ => anyhow::bail!("Unknown config key: {}", key),
         }
-        Ok(())
     }
 
     pub fn get(&self, key: &str) -> Result<String> {
         match key {
-            "headless" => Ok(self.headless.to_string()),
-            "browser_path" => Ok(self.browser_path.clone().unwrap_or_default()),
             _ => anyhow::bail!("Unknown config key: {}", key),
         }
     }
@@ -85,24 +73,14 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = Config::default();
-        assert!(config.headless);
-        assert!(config.browser_path.is_none());
+        // Config is now empty
     }
 
     #[test]
-    fn test_config_set_get() {
-        let mut config = Config::default();
-
-        config.set("headless", "false").unwrap();
-        assert!(!config.headless);
-        assert_eq!(config.get("headless").unwrap(), "false");
-
-        config.set("browser_path", "/tmp/chrome").unwrap();
-        assert_eq!(config.browser_path, Some("/tmp/chrome".to_string()));
-        assert_eq!(config.get("browser_path").unwrap(), "/tmp/chrome");
-
-        config.set("browser_path", "").unwrap();
-        assert!(config.browser_path.is_none());
+    fn test_config_set_get_unknown_key() {
+        let config = Config::default();
+        assert!(config.set("unknown", "value").is_err());
+        assert!(config.get("unknown").is_err());
     }
 
     #[test]
