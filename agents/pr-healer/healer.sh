@@ -52,8 +52,11 @@ for pr_info in $PR_LIST; do
     if [[ "$CI_STATUS" == *"FAILURE"* ]]; then
         echo "[Host] PR #$PR_NUMBER has failed checks. Starting healer..."
         
+        # Get branch name on host
+        BRANCH_NAME=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
+        
         # Execute healer logic inside the container
-        if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$PR_NUMBER"; then
+        if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$PR_NUMBER" "$BRANCH_NAME"; then
             echo "[Host] PR #$PR_NUMBER healing successful."
             mark_processed "$PR_NUMBER" "$PR_HEAD_SHA"
         else

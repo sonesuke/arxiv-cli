@@ -4,16 +4,19 @@
 set -e
 
 PR_NUMBER=$1
+BRANCH_NAME=$2
 
-if [ -z "$PR_NUMBER" ]; then
-    echo "[Container] Error: No PR number provided."
+if [ -z "$PR_NUMBER" ] || [ -z "$BRANCH_NAME" ]; then
+    echo "[Container] Error: PR number or branch name missing."
     exit 1
 fi
 
-echo "[Container] Healing PR #$PR_NUMBER..."
+echo "[Container] Healing PR #$PR_NUMBER (Branch: $BRANCH_NAME)..."
 
 # 1. Checkout PR branch
-gh pr checkout "$PR_NUMBER"
+# Ensure we have the branch locally
+git fetch origin "$BRANCH_NAME"
+git checkout "$BRANCH_NAME"
 CURRENT_BRANCH=$(git branch --show-current)
 echo "[Container] On branch $CURRENT_BRANCH"
 

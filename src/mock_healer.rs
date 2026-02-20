@@ -1,3 +1,3 @@
 pub fn healing_test() {
-    let x = 1;
+    let _x = 1;
 }
