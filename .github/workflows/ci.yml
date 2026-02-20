@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Test
+  verify:
+    name: Build & Verify
     runs-on: ubuntu-latest
 
     steps:
@@ -31,11 +31,3 @@ jobs:
 
       - name: Check build
         run: cargo check --release
-
-  verify:
-    name: Build & Verify
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Done
-        run: echo "All checks passed"
