@@ -345,7 +345,7 @@ mod tests {
     fn test_build_search_url_simple() {
         let client = ArxivClient::new();
         let url = client.build_search_url("machine learning", 0, 50, &None, &None);
-        assert!(url.contains("search_query=machine+learning"));
+        assert!(url.contains("search_query=all:machine learning"));
         assert!(url.contains("start=0"));
         assert!(url.contains("max_results=50"));
     }
@@ -356,7 +356,7 @@ mod tests {
         let after = Some("2023-01-01".to_string());
         let before = Some("2023-12-31".to_string());
         let url = client.build_search_url("LLM", 0, 50, &after, &before);
-        assert!(url.contains("search_query=LLM"));
-        assert!(url.contains("submittedDate:[20230101-20231231]"));
+        assert!(url.contains("search_query=all:LLM"));
+        assert!(url.contains("submittedDate:[20230101+TO+20231231]"));
     }
 }

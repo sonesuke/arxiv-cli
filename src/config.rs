@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_config_set_get_unknown_key() {
-        let config = Config::default();
+        let mut config = Config::default();
         assert!(config.set("unknown", "value").is_err());
         assert!(config.get("unknown").is_err());
     }
