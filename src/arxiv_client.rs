@@ -21,7 +21,6 @@ impl ArxivClient {
         Self { client, base_url: Self::DEFAULT_BASE_URL.to_string() }
     }
 
-
     /// Search for papers on arXiv using the query API
     pub async fn search(
         &self,
