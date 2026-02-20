@@ -1,0 +1,31 @@
+The CI is failing for this Pull Request. Please investigate the failure and fix it.
+Follow the Ralph Pattern rules using the provided tools:
+
+1. READ THE PLAN AND PROGRESS:
+   - Check the PR description and any existing plan/task list to understand the scope.
+   - Read agents/pr-healer/progress.txt to see what has been tried.
+
+2. DECIDE AND EXPLORE:
+   - Decide which specific issue or test failure to work on next.
+   - Explore the codebase to understand the cause.
+
+3. SMALL STEPS & HIGH QUALITY:
+   - Make small, focused changes.
+   - "Leave the codebase better than you found it."
+   - Follow existing patterns in the repository.
+
+4. VERIFY YOUR CHANGES:
+   - Before committing, run the following tool to ensure everything passes:
+     ./agents/pr-healer/verify.sh
+   - Do NOT commit if this tool fails. Fix issues first.
+
+5. RECORD PROGRESS:
+   - After each successful fix and commit, use the following tool to log your progress:
+     ./agents/pr-healer/record-progress.sh "<Task Title>" "<Detailed Description>" "<Changed Files>"
+   - This tool will format and append to agents/pr-healer/progress.txt.
+
+6. STOP CONDITION:
+   - ONLY WORK ON ONE LOGICAL FIX AT A TIME.
+   - If ALL CI-related issues are resolved and tests are green, output: <promise>COMPLETE</promise>
+
+QUALITY OVER SPEED. Small steps compound into big progress.

@@ -4,84 +4,101 @@
 
 set -e
 
+# --- Configuration ---
 WORKSPACE_FOLDER=$(pwd)
 PROGRESS_FILE="agents/pr-healer/progress.txt"
 LOG_FILE="agents/pr-healer/healer.log"
+GH_HELPER="./agents/pr-healer/gh-helper.sh"
 
-touch "$PROGRESS_FILE"
+# --- Initialization ---
 
-echo "[$(date)] healer.sh started" >> "$LOG_FILE"
+init() {
+    touch "$PROGRESS_FILE"
+    echo "[$(date)] healer.sh started" >> "$LOG_FILE"
+}
 
-# Function to check if a PR has already been processed for its current head commit
+# --- Persistence ---
+
 is_processed() {
     local pr_number=$1
     local head_sha=$2
     grep -q "${pr_number}:${head_sha}" "$PROGRESS_FILE"
 }
 
-# Function to mark a PR as processed
 mark_processed() {
     local pr_number=$1
     local head_sha=$2
     echo "${pr_number}:${head_sha}" >> "$PROGRESS_FILE"
 }
 
-# Ensure devcontainer is up
-echo "[Host] Ensuring devcontainer is up..."
-# devcontainer up --workspace-folder "$WORKSPACE_FOLDER"
+# --- Orchestration ---
 
-# Get a list of open PRs with CI failures
-# We can filter by status using gh pr list --json statusCheckRollup
-# However, simpler is just to get all open PRs and check each inside the loop context if needed.
-PR_LIST=$(gh pr list --state open --json number,headRefOid --jq '.[] | "\(.number):\(.headRefOid)"')
+push_healed_branch() {
+    local branch_name=$1
+    local pr_number=$2
+    local head_sha=$3
+    
+    echo "[Host] PR #$pr_number: Quality confirmed. Ready to push branch '$branch_name'..."
+    ORIGINAL_BRANCH=$(git branch --show-current)
+    
+    git checkout "$branch_name"
+    if git push origin "$branch_name"; then
+        echo "[Host] PR #$pr_number: Push successful."
+        mark_processed "$pr_number" "$head_sha"
+    else
+        echo "[Host] PR #$pr_number: Push failed."
+    fi
+    
+    git checkout "$ORIGINAL_BRANCH"
+}
 
-for pr_info in $PR_LIST; do
-    PR_NUMBER=${pr_info%%:*}
-    PR_HEAD_SHA=${pr_info#*:}
+process_single_pr() {
+    local pr_info=$1
+    local pr_number=${pr_info%%:*}
+    local head_sha=${pr_info#*:}
 
-    if is_processed "$PR_NUMBER" "$PR_HEAD_SHA"; then
-        echo "[Host] PR #$PR_NUMBER (SHA: $PR_HEAD_SHA) already processed. Skipping."
-        continue
+    if is_processed "$pr_number" "$head_sha"; then
+        echo "[Host] PR #$pr_number: Already processed for SHA $head_sha. Skipping."
+        return
     fi
 
-    echo "[Host] PR #$PR_NUMBER (SHA: $PR_HEAD_SHA) status check..."
+    echo "[Host] PR #$pr_number: Investigating status..."
     
-    # Check if CI actually failed
-    CI_STATUS=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '.statusCheckRollup[] | select(.status == "COMPLETED") | .conclusion' | sort | uniq)
-    
-    if [[ "$CI_STATUS" == *"FAILURE"* ]]; then
-        echo "[Host] PR #$PR_NUMBER has failed checks. Starting healer..."
+    if "$GH_HELPER" check_failure "$pr_number"; then
+        echo "[Host] PR #$pr_number: CI failure detected. Initiating healing loop..."
         
-        # Get branch name on host
-        BRANCH_NAME=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
+        local branch_name
+        branch_name=$("$GH_HELPER" branch "$pr_number")
         
         # Execute healer logic inside the container
-        if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$PR_NUMBER" "$BRANCH_NAME"; then
-            echo "[Host] PR #$PR_NUMBER healing logic completed. Pushing from host..."
-            
-            # Record current branch to return later
-            ORIGINAL_BRANCH=$(git branch --show-current)
-            
-            # Push the changes from host
-            git checkout "$BRANCH_NAME"
-            if git push origin "$BRANCH_NAME"; then
-                echo "[Host] PR #$PR_NUMBER healing successful and pushed."
-                mark_processed "$PR_NUMBER" "$PR_HEAD_SHA"
-            else
-                echo "[Host] PR #$PR_NUMBER push failed."
-            fi
-            
-            # Back to original branch
-            git checkout "$ORIGINAL_BRANCH"
+        # Note: We pass both PR_NUMBER and BRANCH_NAME to heal.sh
+        if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$pr_number" "$branch_name"; then
+            push_healed_branch "$branch_name" "$pr_number" "$head_sha"
         else
-            echo "[Host] PR #$PR_NUMBER healing failed or no changes needed."
-            # We don't mark as processed so it can be retried if needed, 
-            # or maybe we should to avoid infinite loops on unfixable errors.
-            # For now, let's just log it.
+            echo "[Host] PR #$pr_number: Healing process failed or timed out."
         fi
     else
-        echo "[Host] PR #$PR_NUMBER CI is passing or in progress. Skipping."
+        echo "[Host] PR #$pr_number: Status is green/pending. No action taken."
     fi
-done
+}
 
-echo "[$(date)] healer.sh completed" >> "$LOG_FILE"
+# --- Main Entry Point ---
+
+main() {
+    init
+
+    echo "[Host] Fetching open pull requests..."
+    PR_LIST=$("$GH_HELPER" list)
+
+    if [ -z "$PR_LIST" ]; then
+        echo "[Host] No open pull requests found."
+    else
+        for pr_info in $PR_LIST; do
+            process_single_pr "$pr_info"
+        done
+    fi
+
+    echo "[$(date)] healer.sh completed" >> "$LOG_FILE"
+}
+
+main "$@"
