@@ -17,22 +17,13 @@ impl ArxivClient {
     const DEFAULT_CHUNK_SIZE: usize = 50;
 
     pub fn new() -> Self {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .unwrap();
+        let client = Client::builder().timeout(Duration::from_secs(30)).build().unwrap();
 
-        Self {
-            client,
-            base_url: Self::DEFAULT_BASE_URL.to_string(),
-        }
+        Self { client, base_url: Self::DEFAULT_BASE_URL.to_string() }
     }
 
     pub fn with_base_url(base_url: String) -> Self {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .unwrap();
+        let client = Client::builder().timeout(Duration::from_secs(30)).build().unwrap();
 
         Self { client, base_url }
     }
@@ -69,8 +60,9 @@ impl ArxivClient {
             }
 
             let text = response.text().await?;
-            let feed: ArxivFeed = from_str(&text)
-                .with_context(|| format!("Failed to parse arXiv API response: {}", &text[..200.min(text.len())]))?;
+            let feed: ArxivFeed = from_str(&text).with_context(|| {
+                format!("Failed to parse arXiv API response: {}", &text[..200.min(text.len())])
+            })?;
 
             if feed.entries.is_empty() {
                 break;
@@ -111,15 +103,13 @@ impl ArxivClient {
 
         let response = self.client.get(&url).send().await?;
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "API request failed with status: {}",
-                response.status()
-            ));
+            return Err(anyhow::anyhow!("API request failed with status: {}", response.status()));
         }
 
         let text = response.text().await?;
-        let feed: ArxivFeed = from_str(&text)
-            .with_context(|| format!("Failed to parse arXiv API response: {}", &text[..200.min(text.len())]))?;
+        let feed: ArxivFeed = from_str(&text).with_context(|| {
+            format!("Failed to parse arXiv API response: {}", &text[..200.min(text.len())])
+        })?;
 
         if feed.entries.is_empty() {
             return Err(anyhow::anyhow!("Paper not found: {}", id));
@@ -141,10 +131,7 @@ impl ArxivClient {
         let paper = self.fetch(id).await?;
         let response = self.client.get(&paper.pdf_url).send().await?;
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "Failed to download PDF: status {}",
-                response.status()
-            ));
+            return Err(anyhow::anyhow!("Failed to download PDF: status {}", response.status()));
         }
         let bytes = response.bytes().await?;
         Ok(bytes.to_vec())
@@ -154,44 +141,42 @@ impl ArxivClient {
     async fn extract_pdf_text(&self, pdf_url: &str) -> Result<Option<Vec<Paragraph>>> {
         let pdf_url = pdf_url.to_string();
 
-        let result = tokio::task::spawn_blocking(move || {
-            match reqwest::blocking::get(&pdf_url) {
-                Ok(response) => {
-                    if response.status().is_success() {
-                        let bytes = response.bytes().ok()?;
-                        let mut temp_file = tempfile::NamedTempFile::new().ok()?;
-                        use std::io::Write;
-                        temp_file.write_all(&bytes).ok()?;
+        let result = tokio::task::spawn_blocking(move || match reqwest::blocking::get(&pdf_url) {
+            Ok(response) => {
+                if response.status().is_success() {
+                    let bytes = response.bytes().ok()?;
+                    let mut temp_file = tempfile::NamedTempFile::new().ok()?;
+                    use std::io::Write;
+                    temp_file.write_all(&bytes).ok()?;
 
-                        match pdf_extract::extract_text(temp_file.path()) {
-                            Ok(text) => {
-                                let paragraphs: Vec<Paragraph> = text
-                                    .split("\n\n")
-                                    .map(|s| s.trim().to_string())
-                                    .filter(|s| !s.is_empty())
-                                    .enumerate()
-                                    .map(|(i, s)| Paragraph {
-                                        number: format!("{:04}", i + 1),
-                                        id: String::new(),
-                                        text: s,
-                                    })
-                                    .collect();
-                                Some(paragraphs)
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to extract text from PDF: {}", e);
-                                None
-                            }
+                    match pdf_extract::extract_text(temp_file.path()) {
+                        Ok(text) => {
+                            let paragraphs: Vec<Paragraph> = text
+                                .split("\n\n")
+                                .map(|s| s.trim().to_string())
+                                .filter(|s| !s.is_empty())
+                                .enumerate()
+                                .map(|(i, s)| Paragraph {
+                                    number: format!("{:04}", i + 1),
+                                    id: String::new(),
+                                    text: s,
+                                })
+                                .collect();
+                            Some(paragraphs)
                         }
-                    } else {
-                        eprintln!("Failed to download PDF: Status {}", response.status());
-                        None
+                        Err(e) => {
+                            eprintln!("Failed to extract text from PDF: {}", e);
+                            None
+                        }
                     }
-                }
-                Err(e) => {
-                    eprintln!("Failed to download PDF: {}", e);
+                } else {
+                    eprintln!("Failed to download PDF: Status {}", response.status());
                     None
                 }
+            }
+            Err(e) => {
+                eprintln!("Failed to download PDF: {}", e);
+                None
             }
         })
         .await?;
@@ -218,20 +203,14 @@ impl ArxivClient {
             let from_formatted = from_date.replace("-", "");
             let to_formatted = to_date.replace("-", "");
 
-            format!(
-                "all:{}+AND+submittedDate:[{}+TO+{}]",
-                query, from_formatted, to_formatted
-            )
+            format!("all:{}+AND+submittedDate:[{}+TO+{}]", query, from_formatted, to_formatted)
         } else {
             format!("all:{}", query)
         };
 
         format!(
             "{}?search_query={}&start={}&max_results={}",
-            self.base_url,
-            search_query,
-            start,
-            max_results
+            self.base_url, search_query, start, max_results
         )
     }
 
@@ -315,12 +294,7 @@ struct ArxivCategory {
 impl From<ArxivEntry> for Paper {
     fn from(entry: ArxivEntry) -> Self {
         // Extract paper ID from URL (e.g., http://arxiv.org/abs/2301.07041)
-        let id = entry
-            .id
-            .rsplit('/')
-            .next()
-            .unwrap_or(&entry.id)
-            .to_string();
+        let id = entry.id.rsplit('/').next().unwrap_or(&entry.id).to_string();
 
         // Clean up title and summary (remove extra whitespace)
         let title = entry.title.trim().to_string();
@@ -333,7 +307,10 @@ impl From<ArxivEntry> for Paper {
         let pdf_url = entry
             .links
             .iter()
-            .find(|l| l.rel.as_deref() == Some("related") || l.content_type.as_deref() == Some("application/pdf"))
+            .find(|l| {
+                l.rel.as_deref() == Some("related")
+                    || l.content_type.as_deref() == Some("application/pdf")
+            })
             .map(|l| l.href.clone())
             .unwrap_or_else(|| {
                 // Construct PDF URL from ID
@@ -341,12 +318,8 @@ impl From<ArxivEntry> for Paper {
             });
 
         // Parse published date
-        let published_date = entry
-            .published
-            .split('T')
-            .next()
-            .unwrap_or(&entry.published)
-            .to_string();
+        let published_date =
+            entry.published.split('T').next().unwrap_or(&entry.published).to_string();
 
         Self {
             id,
@@ -368,10 +341,7 @@ mod tests {
     #[test]
     fn test_extract_paper_id_from_url() {
         let client = ArxivClient::new();
-        assert_eq!(
-            client.extract_paper_id("https://arxiv.org/abs/2301.07041"),
-            "2301.07041"
-        );
+        assert_eq!(client.extract_paper_id("https://arxiv.org/abs/2301.07041"), "2301.07041");
     }
 
     #[test]
