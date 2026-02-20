@@ -1,3 +1,3 @@
 pub fn final_test() {
-    let y = 2;
+    let _y = 2;
 }
