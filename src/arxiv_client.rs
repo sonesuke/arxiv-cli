@@ -13,7 +13,6 @@ pub struct ArxivClient {
 
 impl ArxivClient {
     const DEFAULT_BASE_URL: &'static str = "https://export.arxiv.org/api/query";
-    const MAX_RESULTS_PER_REQUEST: usize = 2000;
     const DEFAULT_CHUNK_SIZE: usize = 50;
 
     pub fn new() -> Self {
@@ -22,11 +21,6 @@ impl ArxivClient {
         Self { client, base_url: Self::DEFAULT_BASE_URL.to_string() }
     }
 
-    pub fn with_base_url(base_url: String) -> Self {
-        let client = Client::builder().timeout(Duration::from_secs(30)).build().unwrap();
-
-        Self { client, base_url }
-    }
 
     /// Search for papers on arXiv using the query API
     pub async fn search(
@@ -88,9 +82,7 @@ impl ArxivClient {
         }
 
         if let Some(n) = limit {
-            if all_papers.len() > n {
-                all_papers.truncate(n);
-            }
+            all_papers.truncate(n);
         }
 
         Ok(all_papers)
@@ -253,19 +245,19 @@ struct ArxivEntry {
     #[serde(rename = "published")]
     published: String,
     #[serde(rename = "updated")]
-    updated: String,
+    _updated: String,
     #[serde(rename = "author")]
     authors: Vec<ArxivAuthor>,
     #[serde(rename = "link")]
     links: Vec<ArxivLink>,
     #[serde(rename = "arxiv:primary_category")]
-    primary_category: Option<ArxivCategory>,
+    _primary_category: Option<ArxivCategory>,
     #[serde(rename = "arxiv:comment")]
-    comment: Option<String>,
+    _comment: Option<String>,
     #[serde(rename = "arxiv:journal_ref")]
-    journal_ref: Option<String>,
+    _journal_ref: Option<String>,
     #[serde(rename = "arxiv:doi")]
-    doi: Option<String>,
+    _doi: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -287,7 +279,7 @@ struct ArxivLink {
 #[derive(Debug, Deserialize)]
 struct ArxivCategory {
     #[serde(rename = "term")]
-    term: String,
+    _term: String,
 }
 
 // Convert ArxivEntry to our Paper model

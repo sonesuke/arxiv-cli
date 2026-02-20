@@ -4,14 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Config {
     pub fn load() -> Result<Self> {
@@ -52,15 +46,11 @@ impl Config {
     }
 
     pub fn set(&mut self, key: &str, _value: &str) -> Result<()> {
-        match key {
-            _ => anyhow::bail!("Unknown config key: {}", key),
-        }
+        anyhow::bail!("Unknown config key: {}", key)
     }
 
     pub fn get(&self, key: &str) -> Result<String> {
-        match key {
-            _ => anyhow::bail!("Unknown config key: {}", key),
-        }
+        anyhow::bail!("Unknown config key: {}", key)
     }
 }
 
