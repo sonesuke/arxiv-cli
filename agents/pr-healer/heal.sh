@@ -66,12 +66,5 @@ EOF
     claude --allow-dangerously-skip-permissions -p agents/pr-healer/prompt.txt
 fi
 
-# 5. Push Changes
-if git diff origin/"$CURRENT_BRANCH"..HEAD --quiet; then
-    echo "[Container] No changes to push."
-else
-    echo "[Container] Pushing healed changes..."
-    git push origin "$CURRENT_BRANCH"
-fi
-
-echo "[Container] PR #$PR_NUMBER healing process finished."
+# 5. Push Changes (Handled by Host to avoid auth issues)
+echo "[Container] PR #$PR_NUMBER healing process finished locally."

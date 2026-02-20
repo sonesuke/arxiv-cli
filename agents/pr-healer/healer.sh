@@ -57,8 +57,22 @@ for pr_info in $PR_LIST; do
         
         # Execute healer logic inside the container
         if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$PR_NUMBER" "$BRANCH_NAME"; then
-            echo "[Host] PR #$PR_NUMBER healing successful."
-            mark_processed "$PR_NUMBER" "$PR_HEAD_SHA"
+            echo "[Host] PR #$PR_NUMBER healing logic completed. Pushing from host..."
+            
+            # Record current branch to return later
+            ORIGINAL_BRANCH=$(git branch --show-current)
+            
+            # Push the changes from host
+            git checkout "$BRANCH_NAME"
+            if git push origin "$BRANCH_NAME"; then
+                echo "[Host] PR #$PR_NUMBER healing successful and pushed."
+                mark_processed "$PR_NUMBER" "$PR_HEAD_SHA"
+            else
+                echo "[Host] PR #$PR_NUMBER push failed."
+            fi
+            
+            # Back to original branch
+            git checkout "$ORIGINAL_BRANCH"
         else
             echo "[Host] PR #$PR_NUMBER healing failed or no changes needed."
             # We don't mark as processed so it can be retried if needed, 
