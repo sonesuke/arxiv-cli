@@ -15,7 +15,13 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     ripgrep \
     tmux \
     vim \
+    jq \
+    sudo \
     && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Install mise
+RUN curl https://mise.run | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Install Node.js LTS manually
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
