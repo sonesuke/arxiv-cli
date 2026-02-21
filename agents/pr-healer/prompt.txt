@@ -8,10 +8,11 @@ DO NOT SUMMARIZE. DO NOT EXPLAIN WHAT YOU WOULD DO. EXECUTE EVERY STEP BELOW IMM
 
 2. DISCOVER "PREY" (PRs needing attention):
    - Use `gh pr list --json number,headRefName` to get all open pull requests.
-   - For each PR, check TWO conditions:
-     a) CI failures: `gh pr view <number> --json statusCheckRollup`
-     b) Behind main: `gh pr view <number> --json mergeStateStatus` (look for "BEHIND")
-   - A PR needs healing if CI is failing OR if it is BEHIND main.
+   - For each PR, run: `gh pr view <number> --json statusCheckRollup,mergeStateStatus`
+   - A PR needs healing ONLY if:
+     a) All status checks are COMPLETED and at least one has conclusion FAILURE, OR
+     b) mergeStateStatus is "BEHIND"
+   - SKIP any PR where status checks are still PENDING or IN_PROGRESS. Do NOT touch them.
    - If there are NO PRs needing attention, create the flag file:
      touch agents/pr-healer/ALL_CLEAR
      Then terminate immediately.
