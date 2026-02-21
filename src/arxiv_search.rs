@@ -277,4 +277,48 @@ mod tests {
         assert!(url.contains("date-to_date=2023-10-13"));
         assert!(url.contains("terms-0-term=conversational%20data%20analysis"));
     }
+
+    #[test]
+    fn test_parse_search_results_valid() {
+        let results = vec![Paper {
+            id: "2301.00001".to_string(),
+            title: "Test Title".to_string(),
+            authors: vec!["Author A".to_string()],
+            published_date: "2023-01-01".to_string(),
+            summary: "Test Summary".to_string(),
+            url: "https://arxiv.org/abs/2301.00001".to_string(),
+            pdf_url: "https://arxiv.org/pdf/2301.00001".to_string(),
+            description_paragraphs: None,
+        }];
+        let json_str = serde_json::to_string(&results).unwrap();
+        let value = serde_json::to_value(json_str).unwrap();
+
+        // Parse the same way the code does
+        let parsed_str: String = serde_json::from_value(value).unwrap();
+        let parsed: Vec<Paper> = serde_json::from_str(&parsed_str).unwrap();
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].id, "2301.00001");
+    }
+
+    #[test]
+    fn test_parse_fetch_result_valid() {
+        let paper = Paper {
+            id: "2301.00001".to_string(),
+            title: "Test Title".to_string(),
+            authors: vec!["Author A".to_string()],
+            published_date: "2023-01-01".to_string(),
+            summary: "Test Summary".to_string(),
+            url: "https://arxiv.org/abs/2301.00001".to_string(),
+            pdf_url: "https://arxiv.org/pdf/2301.00001".to_string(),
+            description_paragraphs: None,
+        };
+        let json_str = serde_json::to_string(&paper).unwrap();
+        let value = serde_json::to_value(json_str).unwrap();
+
+        // Parse the same way the code does
+        let parsed_str: String = serde_json::from_value(value).unwrap();
+        let parsed: Paper = serde_json::from_str(&parsed_str).unwrap();
+        assert_eq!(parsed.id, "2301.00001");
+        assert_eq!(parsed.title, "Test Title");
+    }
 }
