@@ -12,7 +12,7 @@ BLOCKERS="${4:-}"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Use jq to safely create JSON
-ENTRY=$(jq -n \
+ENTRY=$(jq -n -c \
   --arg ts "$TIMESTAMP" \
   --arg task "$TASK" \
   --arg files "$FILES" \

@@ -86,7 +86,6 @@ impl Config {
 mod tests {
     use super::*;
     use std::io::Write;
-    use tempfile::NamedTempFile;
 
     #[test]
     fn test_config_default() {
@@ -159,9 +158,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
 
-        let mut config = Config::default();
-        config.headless = false;
-        config.browser_path = Some("/custom/path".to_string());
+        let config = Config { headless: false, browser_path: Some("/custom/path".to_string()) };
         config.save_to(&path).unwrap();
 
         let loaded = Config::load_from(&path).unwrap();

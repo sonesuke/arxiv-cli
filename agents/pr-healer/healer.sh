@@ -3,6 +3,7 @@
 # The simplified "Host Loop" daemon script.
 
 set -e
+set -o pipefail
 
 # --- Pre-flight Checks ---
 check_command() {
