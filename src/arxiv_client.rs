@@ -228,7 +228,7 @@ impl Default for ArxivClient {
 /// Root feed element from arXiv Atom API
 #[derive(Debug, Deserialize)]
 struct ArxivFeed {
-    #[serde(rename = "entry")]
+    #[serde(rename = "entry", default)]
     entries: Vec<ArxivEntry>,
 }
 
@@ -329,6 +329,8 @@ impl From<ArxivEntry> for Paper {
 mod tests {
     use super::*;
 
+    // ============ extract_paper_id tests ============
+
     #[test]
     fn test_extract_paper_id_from_url() {
         let client = ArxivClient::new();
@@ -340,6 +342,14 @@ mod tests {
         let client = ArxivClient::new();
         assert_eq!(client.extract_paper_id("2301.07041"), "2301.07041");
     }
+
+    #[test]
+    fn test_extract_paper_id_from_http_url() {
+        let client = ArxivClient::new();
+        assert_eq!(client.extract_paper_id("http://arxiv.org/abs/1234.5678v2"), "1234.5678v2");
+    }
+
+    // ============ build_search_url tests ============
 
     #[test]
     fn test_build_search_url_simple() {
@@ -358,5 +368,205 @@ mod tests {
         let url = client.build_search_url("LLM", 0, 50, &after, &before);
         assert!(url.contains("search_query=all:LLM"));
         assert!(url.contains("submittedDate:[20230101+TO+20231231]"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_after_only() {
+        let client = ArxivClient::new();
+        let after = Some("2023-06-01".to_string());
+        let url = client.build_search_url("AI", 0, 10, &after, &None);
+        assert!(url.contains("submittedDate:[20230601+TO+20991231]"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_before_only() {
+        let client = ArxivClient::new();
+        let before = Some("2023-06-01".to_string());
+        let url = client.build_search_url("AI", 0, 10, &None, &before);
+        assert!(url.contains("submittedDate:[19000101+TO+20230601]"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_start_offset() {
+        let client = ArxivClient::new();
+        let url = client.build_search_url("test", 100, 25, &None, &None);
+        assert!(url.contains("start=100"));
+        assert!(url.contains("max_results=25"));
+    }
+
+    // ============ XML deserialization tests ============
+
+    fn sample_arxiv_xml() -> &'static str {
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+  <entry>
+    <id>http://arxiv.org/abs/2301.07041v1</id>
+    <title>  Test Paper Title  </title>
+    <summary>  This is a test summary.  </summary>
+    <published>2023-01-17T18:59:59Z</published>
+    <updated>2023-01-17T18:59:59Z</updated>
+    <author><name>Alice Smith</name></author>
+    <author><name>Bob Jones</name></author>
+    <link href="http://arxiv.org/abs/2301.07041v1" rel="alternate" type="text/html"/>
+    <link href="http://arxiv.org/pdf/2301.07041v1" rel="related" type="application/pdf" title="pdf"/>
+    <arxiv:primary_category term="cs.AI"/>
+    <arxiv:comment>10 pages, 5 figures</arxiv:comment>
+  </entry>
+</feed>"#
+    }
+
+    #[test]
+    fn test_parse_arxiv_feed_xml() {
+        let feed: ArxivFeed = from_str(sample_arxiv_xml()).unwrap();
+        assert_eq!(feed.entries.len(), 1);
+
+        let entry = &feed.entries[0];
+        assert_eq!(entry.id, "http://arxiv.org/abs/2301.07041v1");
+        assert!(entry.title.contains("Test Paper Title"));
+        assert!(entry.summary.contains("test summary"));
+        assert_eq!(entry.authors.len(), 2);
+        assert_eq!(entry.authors[0].name, "Alice Smith");
+        assert_eq!(entry.authors[1].name, "Bob Jones");
+        assert_eq!(entry.published, "2023-01-17T18:59:59Z");
+        assert_eq!(entry.links.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_arxiv_feed_empty_entries() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+</feed>"#;
+        let feed: ArxivFeed = from_str(xml).unwrap();
+        assert!(feed.entries.is_empty());
+    }
+
+    #[test]
+    fn test_parse_arxiv_feed_multiple_entries() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+  <entry>
+    <id>http://arxiv.org/abs/0001.0001v1</id>
+    <title>Paper One</title>
+    <summary>Summary one</summary>
+    <published>2023-01-01T00:00:00Z</published>
+    <updated>2023-01-01T00:00:00Z</updated>
+    <author><name>Author A</name></author>
+    <link href="http://arxiv.org/abs/0001.0001v1" rel="alternate" type="text/html"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/0002.0002v1</id>
+    <title>Paper Two</title>
+    <summary>Summary two</summary>
+    <published>2023-02-01T00:00:00Z</published>
+    <updated>2023-02-01T00:00:00Z</updated>
+    <author><name>Author B</name></author>
+    <link href="http://arxiv.org/abs/0002.0002v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>"#;
+        let feed: ArxivFeed = from_str(xml).unwrap();
+        assert_eq!(feed.entries.len(), 2);
+    }
+
+    // ============ ArxivEntry -> Paper conversion tests ============
+
+    #[test]
+    fn test_entry_to_paper_conversion() {
+        let feed: ArxivFeed = from_str(sample_arxiv_xml()).unwrap();
+        let paper: Paper = feed.entries.into_iter().next().unwrap().into();
+
+        assert_eq!(paper.id, "2301.07041v1");
+        assert_eq!(paper.title, "Test Paper Title");
+        assert_eq!(paper.summary, "This is a test summary.");
+        assert_eq!(paper.authors, vec!["Alice Smith", "Bob Jones"]);
+        assert_eq!(paper.published_date, "2023-01-17");
+        assert_eq!(paper.url, "http://arxiv.org/abs/2301.07041v1");
+        assert_eq!(paper.pdf_url, "http://arxiv.org/pdf/2301.07041v1");
+        assert!(paper.description_paragraphs.is_none());
+    }
+
+    #[test]
+    fn test_entry_to_paper_pdf_url_fallback() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+  <entry>
+    <id>http://arxiv.org/abs/9999.1234v1</id>
+    <title>No PDF Link Paper</title>
+    <summary>Summary</summary>
+    <published>2023-05-01T00:00:00Z</published>
+    <updated>2023-05-01T00:00:00Z</updated>
+    <author><name>Test Author</name></author>
+    <link href="http://arxiv.org/abs/9999.1234v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>"#;
+        let feed: ArxivFeed = from_str(xml).unwrap();
+        let paper: Paper = feed.entries.into_iter().next().unwrap().into();
+
+        // Should fallback to constructed PDF URL
+        assert_eq!(paper.pdf_url, "https://arxiv.org/pdf/9999.1234v1.pdf");
+    }
+
+    #[test]
+    fn test_entry_to_paper_title_trimmed() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+  <entry>
+    <id>http://arxiv.org/abs/1111.2222v1</id>
+    <title>
+      Whitespace Title
+    </title>
+    <summary>
+      Whitespace Summary
+    </summary>
+    <published>2023-03-15T12:00:00Z</published>
+    <updated>2023-03-15T12:00:00Z</updated>
+    <author><name>Author</name></author>
+    <link href="http://arxiv.org/abs/1111.2222v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>"#;
+        let feed: ArxivFeed = from_str(xml).unwrap();
+        let paper: Paper = feed.entries.into_iter().next().unwrap().into();
+
+        assert_eq!(paper.title, "Whitespace Title");
+        assert_eq!(paper.summary, "Whitespace Summary");
+    }
+
+    #[test]
+    fn test_entry_to_paper_date_parsing() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <title>ArXiv Query</title>
+  <entry>
+    <id>http://arxiv.org/abs/3333.4444v1</id>
+    <title>Date Test</title>
+    <summary>Summary</summary>
+    <published>2024-12-25T08:30:00Z</published>
+    <updated>2024-12-25T08:30:00Z</updated>
+    <author><name>Author</name></author>
+    <link href="http://arxiv.org/abs/3333.4444v1" rel="alternate" type="text/html"/>
+  </entry>
+</feed>"#;
+        let feed: ArxivFeed = from_str(xml).unwrap();
+        let paper: Paper = feed.entries.into_iter().next().unwrap().into();
+
+        assert_eq!(paper.published_date, "2024-12-25");
+    }
+
+    // ============ Default impl test ============
+
+    #[test]
+    fn test_arxiv_client_default() {
+        let client = ArxivClient::default();
+        assert_eq!(client.base_url, "https://export.arxiv.org/api/query");
     }
 }
