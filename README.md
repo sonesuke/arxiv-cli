@@ -34,6 +34,38 @@ If you have Rust installed, you can build from source:
 cargo install --path .
 ```
 
+## Model Context Protocol (MCP)
+
+`arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
+
+### Available Tools
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` |
+| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `paper_id` (required, e.g., "2512.04518") |
+
+### Usage
+To start the MCP server over `stdio`:
+```bash
+arxiv-cli mcp
+```
+
+### Configuration for Claude Desktop
+
+Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "arxiv-cli": {
+      "command": "/path/to/arxiv-cli",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
 ## Usage
 
 ### CLI Commands
@@ -77,38 +109,6 @@ arxiv-cli fetch 2512.04518 --raw > paper.pdf
 Useful for debugging.
 ```bash
 arxiv-cli search --query "AI" --head
-```
-
-## Model Context Protocol (MCP)
-
-`arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
-
-### Available Tools
-
-| Tool Name | Description | Parameters |
-|---|---|---|
-| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` |
-| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `paper_id` (required, e.g., "2512.04518") |
-
-### Usage
-To start the MCP server over `stdio`:
-```bash
-arxiv-cli mcp
-```
-
-### Configuration for Claude Desktop
-
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "arxiv-cli": {
-      "command": "/path/to/arxiv-cli",
-      "args": ["mcp"]
-    }
-  }
-}
 ```
 
 ## Configuration
