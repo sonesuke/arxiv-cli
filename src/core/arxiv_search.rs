@@ -1,7 +1,7 @@
-use crate::cdp::{CdpBrowser, CdpPage};
-use crate::config::Config;
-use crate::models::{Paper, Paragraph};
-use anyhow::Result;
+use super::cdp::{CdpBrowser, CdpPage};
+use super::config::Config;
+use super::error::{ArxivError, Result};
+use super::models::{Paper, Paragraph};
 
 pub struct ArxivClient {
     browser: CdpBrowser,
@@ -40,10 +40,8 @@ impl ArxivClient {
             let url = Self::build_search_url(query, start, &after, &before);
 
             tab.goto(&url).await?;
-            // tab.wait_until_navigated()?; // CDP helper doesn't have this, wait for element instead
 
             // Wait for results to load or check if no results
-            // Use a custom wait loop to detect "no results" message quickly
             let wait_script = include_str!("scripts/check_search_results.js");
 
             let mut status = "timeout";
@@ -96,16 +94,6 @@ impl ArxivClient {
 
             all_papers.extend(papers);
 
-            // Close tab to save resources, though headless_chrome might handle this on drop, explicit is safer for loop
-
-            // Tab closes when dropped? No, CdpPage doesn't own the tab in browser, it just connects.
-            // But for this simple implementation we just open new tabs.
-            // CdpBrowser drop will kill key process.
-            // google-patent-cli doesn't explicit close tabs in loop?
-            // It seems CdpPage doesn't have close method.
-            // This might leak tabs in long loop.
-            // But we can just proceed for now matching the structure.
-
             start += chunk_size;
         }
 
@@ -127,7 +115,9 @@ impl ArxivClient {
         tab.goto(&url).await?;
 
         if !tab.wait_for_element("h1.title", 10).await? {
-            return Err(anyhow::anyhow!("Paper page not loaded correctly or timeout"));
+            return Err(ArxivError::Extraction(
+                "Paper page not loaded correctly or timeout".to_string(),
+            ));
         }
 
         let js_script = include_str!("scripts/extract_paper.js");
@@ -144,7 +134,10 @@ impl ArxivClient {
                 match reqwest::blocking::get(&pdf_url) {
                     Ok(response) => {
                         if response.status().is_success() {
-                            let bytes = response.bytes().ok()?;
+                            let bytes = match response.bytes() {
+                                Ok(b) => b,
+                                Err(_) => return None,
+                            };
                             // Use tempfile to write bytes for pdf-extract
                             let mut temp_file = tempfile::NamedTempFile::new().ok()?;
                             use std::io::Write;
@@ -181,7 +174,8 @@ impl ArxivClient {
                     }
                 }
             })
-            .await?;
+            .await
+            .map_err(|e| ArxivError::Other(format!("Join error during PDF extraction: {}", e)))?;
 
             paper.description_paragraphs = pdf_text;
         }

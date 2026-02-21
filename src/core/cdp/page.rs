@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use crate::core::{ArxivError, Result};
 use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::time::sleep;
@@ -62,7 +62,7 @@ impl CdpPage {
             .await?;
 
         if let Some(exception) = result.get("exceptionDetails") {
-            return Err(anyhow!("JavaScript error: {:?}", exception));
+            return Err(ArxivError::Cdp(format!("JavaScript error: {:?}", exception)));
         }
 
         Ok(result["result"]["value"].clone())

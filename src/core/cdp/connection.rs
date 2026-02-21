@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use crate::core::{ArxivError, Result};
 use futures::{SinkExt, StreamExt};
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -17,7 +17,9 @@ pub struct CdpConnection {
 impl CdpConnection {
     /// Connect to Chrome DevTools Protocol via WebSocket
     pub async fn connect(ws_url: &str) -> Result<Self> {
-        let (ws_stream, _) = connect_async(ws_url).await?;
+        let (ws_stream, _) = connect_async(ws_url).await.map_err(|e| {
+            ArxivError::Cdp(format!("Failed to connect to WebSocket {}: {}", ws_url, e))
+        })?;
         let (mut write, mut read) = ws_stream.split();
 
         let (command_tx, mut command_rx) =
@@ -55,10 +57,12 @@ impl CdpConnection {
                                 let responder = pending.lock().await.remove(&id);
                                 if let Some(responder) = responder {
                                     if let Some(error) = v.get("error") {
-                                        let _ = responder.send(Err(anyhow!(
+                                        let message =
+                                            error["message"].as_str().unwrap_or("unknown");
+                                        let _ = responder.send(Err(ArxivError::Cdp(format!(
                                             "CDP error: {}",
-                                            error["message"].as_str().unwrap_or("unknown")
-                                        )));
+                                            message
+                                        ))));
                                     } else if let Some(result) = v.get("result") {
                                         let _ = responder.send(Ok(result.clone()));
                                     }
@@ -92,8 +96,8 @@ impl CdpConnection {
         let (tx, rx) = oneshot::channel();
         self.command_tx
             .send((id, method.to_string(), params, tx))
-            .map_err(|_| anyhow!("Failed to send command"))?;
+            .map_err(|_| ArxivError::Cdp("Failed to send command to channel".to_string()))?;
 
-        rx.await.map_err(|_| anyhow!("Response channel closed"))?
+        rx.await.map_err(|_| ArxivError::Cdp("Response channel closed".to_string()))?
     }
 }
