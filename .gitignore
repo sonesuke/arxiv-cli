@@ -1,1 +1,4 @@
 /target
+# PR-Healer runtime artifacts
+agents/pr-healer/healer.log
+agents/pr-healer/progress.txt

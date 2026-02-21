@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        let config = Config::default();
+        let _config = Config::default();
         // Config is now empty
     }
 
