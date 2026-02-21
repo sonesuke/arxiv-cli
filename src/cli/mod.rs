@@ -90,13 +90,13 @@ pub async fn run() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    if let Commands::Mcp = cli.command {
-        // This will be handled in main.rs calling mcp::run
-        return crate::mcp::run().await;
-    }
-
     if cli.head {
         config.headless = false;
+    }
+
+    if let Commands::Mcp = cli.command {
+        // This will be handled in main.rs calling mcp::run, but we need to pass the config
+        return crate::mcp::run(config).await;
     }
 
     let client = ArxivClient::new(&config).await?;
