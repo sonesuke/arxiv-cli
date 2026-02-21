@@ -54,6 +54,14 @@ impl ServerHandler for ArxivHandler {
                                 "limit": {
                                     "type": "number",
                                     "description": "Maximum number of results to return"
+                                },
+                                "before": {
+                                    "type": "string",
+                                    "description": "Filter by date (submitted before), format: YYYY-MM-DD"
+                                },
+                                "after": {
+                                    "type": "string",
+                                    "description": "Filter by date (submitted after), format: YYYY-MM-DD"
                                 }
                             })),
                             required: Some(vec!["query".to_string()]),
@@ -68,6 +76,10 @@ impl ServerHandler for ArxivHandler {
                                 "id": {
                                     "type": "string",
                                     "description": "The arXiv ID of the paper (e.g., '2512.04518')"
+                                },
+                                "raw": {
+                                    "type": "boolean",
+                                    "description": "If true, downloads the raw PDF to a local temporary file and returns its path"
                                 }
                             })),
                             required: Some(vec!["id".to_string()]),
@@ -103,8 +115,12 @@ impl ServerHandler for ArxivHandler {
                             arguments.get("query").and_then(|v| v.as_str()).unwrap_or_default();
                         let limit =
                             arguments.get("limit").and_then(|v| v.as_u64()).map(|n| n as usize);
+                        let before =
+                            arguments.get("before").and_then(|v| v.as_str()).map(|s| s.to_string());
+                        let after =
+                            arguments.get("after").and_then(|v| v.as_str()).map(|s| s.to_string());
 
-                        let result = match self.client.search(query, limit, None, None).await {
+                        let result = match self.client.search(query, limit, after, before).await {
                             Ok(papers) => ToolResult {
                                 content: vec![MessageContent::Text {
                                     text: serde_json::to_string_pretty(&papers).unwrap_or_default(),
@@ -122,19 +138,54 @@ impl ServerHandler for ArxivHandler {
                     }
                     "fetch_paper" => {
                         let id = arguments.get("id").and_then(|v| v.as_str()).unwrap_or_default();
-                        let result = match self.client.fetch(id).await {
-                            Ok(paper) => ToolResult {
-                                content: vec![MessageContent::Text {
-                                    text: serde_json::to_string_pretty(&paper).unwrap_or_default(),
-                                }],
-                                structured_content: None,
-                            },
-                            Err(e) => ToolResult {
-                                content: vec![MessageContent::Text {
-                                    text: format!("Fetch failed: {}", e),
-                                }],
-                                structured_content: None,
-                            },
+                        let raw = arguments.get("raw").and_then(|v| v.as_bool()).unwrap_or(false);
+
+                        let result = if raw {
+                            match self.client.fetch_pdf(id).await {
+                                Ok(bytes) => {
+                                    let mut temp_path = std::env::temp_dir();
+                                    temp_path.push(format!("arxiv_{}.pdf", id.replace("/", "_")));
+                                    match tokio::fs::write(&temp_path, bytes).await {
+                                        Ok(_) => ToolResult {
+                                            content: vec![MessageContent::Text {
+                                                text: format!(
+                                                    "Successfully downloaded PDF to: {}",
+                                                    temp_path.display()
+                                                ),
+                                            }],
+                                            structured_content: None,
+                                        },
+                                        Err(e) => ToolResult {
+                                            content: vec![MessageContent::Text {
+                                                text: format!("Failed to save PDF to disk: {}", e),
+                                            }],
+                                            structured_content: None,
+                                        },
+                                    }
+                                }
+                                Err(e) => ToolResult {
+                                    content: vec![MessageContent::Text {
+                                        text: format!("Failed to fetch PDF: {}", e),
+                                    }],
+                                    structured_content: None,
+                                },
+                            }
+                        } else {
+                            match self.client.fetch(id).await {
+                                Ok(paper) => ToolResult {
+                                    content: vec![MessageContent::Text {
+                                        text: serde_json::to_string_pretty(&paper)
+                                            .unwrap_or_default(),
+                                    }],
+                                    structured_content: None,
+                                },
+                                Err(e) => ToolResult {
+                                    content: vec![MessageContent::Text {
+                                        text: format!("Fetch failed: {}", e),
+                                    }],
+                                    structured_content: None,
+                                },
+                            }
                         };
                         Ok(serde_json::to_value(result).unwrap_or(Value::Null))
                     }
@@ -152,8 +203,7 @@ impl ServerHandler for ArxivHandler {
     }
 }
 
-pub async fn run() -> anyhow::Result<()> {
-    let config = Config::load().map_err(|e| anyhow::anyhow!("Config error: {}", e))?;
+pub async fn run(config: Config) -> anyhow::Result<()> {
     let client =
         ArxivClient::new(&config).await.map_err(|e| anyhow::anyhow!("Client error: {}", e))?;
     let handler = Arc::new(ArxivHandler { client });
