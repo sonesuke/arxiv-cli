@@ -1,104 +1,46 @@
 #!/bin/bash
 # agents/pr-healer/healer.sh (Host side)
-# The "Ralph Loop" orchestration script.
+# The simplified "Host Loop" daemon script.
 
 set -e
 
 # --- Configuration ---
 WORKSPACE_FOLDER=$(pwd)
-PROGRESS_FILE="agents/pr-healer/progress.txt"
 LOG_FILE="agents/pr-healer/healer.log"
-GH_HELPER="./agents/pr-healer/gh-helper.sh"
 
 # --- Initialization ---
+echo "[$(date)] PR-Healer Daemon started" >> "$LOG_FILE"
 
-init() {
-    touch "$PROGRESS_FILE"
-    echo "[$(date)] healer.sh started" >> "$LOG_FILE"
-}
+# Trap Ctrl+C to exit gracefully
+trap "echo '[Host] Caught SIGINT. Exiting daemon loop.'; exit 0" SIGINT
 
-# --- Persistence ---
-
-is_processed() {
-    local pr_number=$1
-    local head_sha=$2
-    grep -q "${pr_number}:${head_sha}" "$PROGRESS_FILE"
-}
-
-mark_processed() {
-    local pr_number=$1
-    local head_sha=$2
-    echo "${pr_number}:${head_sha}" >> "$PROGRESS_FILE"
-}
-
-# --- Orchestration ---
-
-push_healed_branch() {
-    local branch_name=$1
-    local pr_number=$2
-    local head_sha=$3
+# --- Orchestration Loop ---
+while :; do
+    echo "=================================================="
+    echo "[Host] Starting True Agentic PR-Healer Loop..."
+    echo "[Host] Triggering Claude inside Dev Container..."
     
-    echo "[Host] PR #$pr_number: Quality confirmed. Ready to push branch '$branch_name'..."
-    ORIGINAL_BRANCH=$(git branch --show-current)
+    # Remove the ALL_CLEAR flag before each run
+    rm -f agents/pr-healer/ALL_CLEAR
     
-    git checkout "$branch_name"
-    if git push origin "$branch_name"; then
-        echo "[Host] PR #$pr_number: Push successful."
-        mark_processed "$pr_number" "$head_sha"
-    else
-        echo "[Host] PR #$pr_number: Push failed."
+    # Run Claude inside the container. 
+    # Claude's intelligence takes over from here (discovering PRs, fixing, pushing).
+    # We pass standard input from /dev/null as requested by the user, which works 
+    # because devcontainer exec will not allocate an interactive TTY when stdin is closed here, 
+    # automatically bypassing the "Yes, I accept" screen.
+    devcontainer exec \
+        --workspace-folder "$WORKSPACE_FOLDER" \
+        --remote-env "GITHUB_TOKEN=$GITHUB_TOKEN" \
+        claude --dangerously-skip-permissions "$(cat agents/pr-healer/prompt.txt)" < /dev/null
+    
+    # If Claude determines there's nothing left to do, it will touch this flag file.
+    if [ -f "agents/pr-healer/ALL_CLEAR" ]; then
+        echo "[Host] Claude reported all PRs are clean. Sleeping for 5 minutes before checking again..."
+        rm -f agents/pr-healer/ALL_CLEAR
+        sleep 300
+        continue
     fi
     
-    git checkout "$ORIGINAL_BRANCH"
-}
-
-process_single_pr() {
-    local pr_info=$1
-    local pr_number=${pr_info%%:*}
-    local head_sha=${pr_info#*:}
-
-    if is_processed "$pr_number" "$head_sha"; then
-        echo "[Host] PR #$pr_number: Already processed for SHA $head_sha. Skipping."
-        return
-    fi
-
-    echo "[Host] PR #$pr_number: Investigating status..."
-    
-    if "$GH_HELPER" check_failure "$pr_number"; then
-        echo "[Host] PR #$pr_number: CI failure detected. Initiating healing loop..."
-        
-        local branch_name
-        branch_name=$("$GH_HELPER" branch "$pr_number")
-        
-        # Execute healer logic inside the container
-        # Note: We pass both PR_NUMBER and BRANCH_NAME to heal.sh
-        if devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" bash agents/pr-healer/heal.sh "$pr_number" "$branch_name"; then
-            push_healed_branch "$branch_name" "$pr_number" "$head_sha"
-        else
-            echo "[Host] PR #$pr_number: Healing process failed or timed out."
-        fi
-    else
-        echo "[Host] PR #$pr_number: Status is green/pending. No action taken."
-    fi
-}
-
-# --- Main Entry Point ---
-
-main() {
-    init
-
-    echo "[Host] Fetching open pull requests..."
-    PR_LIST=$("$GH_HELPER" list)
-
-    if [ -z "$PR_LIST" ]; then
-        echo "[Host] No open pull requests found."
-    else
-        for pr_info in $PR_LIST; do
-            process_single_pr "$pr_info"
-        done
-    fi
-
-    echo "[$(date)] healer.sh completed" >> "$LOG_FILE"
-}
-
-main "$@"
+    echo "[Host] Healer agent finished a turn. Restarting loop..."
+    sleep 2
+done
