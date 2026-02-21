@@ -39,6 +39,7 @@ fn test_mcp_initialize() {
 
     // Cleanup
     let _ = child.kill();
+    let _ = child.wait();
 }
 
 #[test]
@@ -65,7 +66,7 @@ fn test_mcp_list_tools() {
             "capabilities": {}
         }
     });
-    writeln!(stdin, "{}", init_request.to_string()).unwrap();
+    writeln!(stdin, "{}", init_request).unwrap();
     let mut response = String::new();
     reader.read_line(&mut response).unwrap();
     assert!(response.contains("tools"), "Init response failed to contain tools: {}", response);
@@ -75,7 +76,7 @@ fn test_mcp_list_tools() {
         "jsonrpc": "2.0",
         "method": "initialized"
     });
-    writeln!(stdin, "{}", initialized_notification.to_string()).unwrap();
+    writeln!(stdin, "{}", initialized_notification).unwrap();
 
     // 3. List tools
     let list_request = json!({
@@ -84,7 +85,7 @@ fn test_mcp_list_tools() {
         "method": "tools/list",
         "params": {}
     });
-    writeln!(stdin, "{}", list_request.to_string()).unwrap();
+    writeln!(stdin, "{}", list_request).unwrap();
     response.clear();
     reader.read_line(&mut response).unwrap();
 
@@ -92,4 +93,5 @@ fn test_mcp_list_tools() {
     assert!(response.contains("fetch_paper"), "List tools response failed: {}", response);
 
     let _ = child.kill();
+    let _ = child.wait();
 }
