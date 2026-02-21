@@ -1,20 +1,15 @@
-use super::cdp::{CdpBrowser, CdpPage};
+use super::cdp::{BrowserManager, CdpPage};
 use super::config::Config;
 use super::error::{ArxivError, Result};
 use super::models::{Paper, Paragraph};
 
 pub struct ArxivClient {
-    browser: CdpBrowser,
+    browser_manager: BrowserManager,
 }
 
 impl ArxivClient {
     pub async fn new(config: &Config) -> Result<Self> {
-        let args = vec![
-            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ];
-        let browser_path = config.browser_path.as_ref().map(std::path::PathBuf::from);
-        let browser = CdpBrowser::launch(browser_path, args, config.headless, false).await?;
-        Ok(Self { browser })
+        Ok(Self { browser_manager: BrowserManager::new(config.clone()) })
     }
 
     pub async fn search(
@@ -34,7 +29,8 @@ impl ArxivClient {
                 break;
             }
 
-            let ws_url = self.browser.new_page().await?;
+            let browser = self.browser_manager.get_browser().await?;
+            let ws_url = browser.new_page().await?;
             let tab = CdpPage::new(&ws_url).await?;
 
             let url = Self::build_search_url(query, start, &after, &before);
@@ -74,10 +70,12 @@ impl ArxivClient {
                 let json_str: String = serde_json::from_value(value)?;
                 let paper: Paper = serde_json::from_str(&json_str)?;
                 all_papers.push(paper);
+                let _ = tab.close().await;
                 break; // Single result from redirect
             }
 
             if status != "found" {
+                let _ = tab.close().await;
                 break; // No more results found, empty, or timeout
             }
 
@@ -87,6 +85,8 @@ impl ArxivClient {
 
             let json_str: String = serde_json::from_value(value)?;
             let papers: Vec<Paper> = serde_json::from_str(&json_str)?;
+
+            let _ = tab.close().await;
 
             if papers.is_empty() {
                 break;
@@ -108,7 +108,8 @@ impl ArxivClient {
     }
 
     pub async fn fetch(&self, id: &str) -> Result<Paper> {
-        let ws_url = self.browser.new_page().await?;
+        let browser = self.browser_manager.get_browser().await?;
+        let ws_url = browser.new_page().await?;
         let tab = CdpPage::new(&ws_url).await?;
         let url = Self::build_fetch_url(id);
 
@@ -126,6 +127,8 @@ impl ArxivClient {
 
         let json_str: String = serde_json::from_value(value)?;
         let mut paper: Paper = serde_json::from_str(&json_str)?;
+
+        let _ = tab.close().await;
 
         // Fetch PDF and extract text
         if !paper.pdf_url.is_empty() {
