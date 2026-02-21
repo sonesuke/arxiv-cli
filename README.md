@@ -15,12 +15,18 @@ An AI-ready search and fetch tool for arXiv papers, designed for both humans and
 
 ## Installation
 
-### From Release (Recommended)
-You can download the pre-built binaries from the [releases page](https://github.com/sonesuke/arxiv-cli/releases).
+### Easy Install (Recommended)
 
-1. Download the archive for your OS.
-2. Extract the archive.
-3. Move the binary to a location in your `PATH` (e.g. `/usr/local/bin`).
+**Linux & macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonesuke/arxiv-cli/main/install.sh | bash
+```
+> Note: On Linux, this installs to `~/.local/bin` without requiring `sudo`. Make sure `~/.local/bin` is in your `PATH`.
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/sonesuke/arxiv-cli/main/install.ps1 | iex
+```
 
 ### From Source (Cargo)
 If you have Rust installed, you can build from source:
