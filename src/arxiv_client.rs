@@ -16,7 +16,11 @@ impl ArxivClient {
     const DEFAULT_CHUNK_SIZE: usize = 50;
 
     pub fn new() -> Self {
-        let client = Client::builder().timeout(Duration::from_secs(30)).build().unwrap();
+        let client = Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent("arxiv-cli/0.0.5 (https://github.com/sonesuke/arxiv-cli)")
+            .build()
+            .unwrap();
 
         Self { client, base_url: Self::DEFAULT_BASE_URL.to_string() }
     }
