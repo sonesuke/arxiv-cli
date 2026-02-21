@@ -1,6 +1,26 @@
 use serde_json::json;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
+use std::time::Duration;
+
+/// Gracefully shut down the MCP child process by closing stdin,
+/// then waiting for it to exit. This ensures coverage profraw files
+/// are flushed (SIGKILL would prevent that).
+fn graceful_shutdown(stdin: std::process::ChildStdin, mut child: std::process::Child) {
+    drop(stdin); // Close stdin → server's reader loop ends → process exits
+
+    // Poll try_wait for up to 5 seconds
+    for _ in 0..50 {
+        match child.try_wait() {
+            Ok(Some(_)) => return, // exited cleanly
+            Ok(None) => std::thread::sleep(Duration::from_millis(100)),
+            Err(_) => break,
+        }
+    }
+    // Fallback: force kill if still running
+    let _ = child.kill();
+    let _ = child.wait();
+}
 
 #[test]
 fn test_mcp_initialize() {
@@ -37,9 +57,8 @@ fn test_mcp_initialize() {
     // The SDK returns ServerCapabilities directly as the result
     assert!(response.contains("tools"), "Response did not contain tools: {}", response);
 
-    // Cleanup
-    let _ = child.kill();
-    let _ = child.wait();
+    // Graceful cleanup to flush coverage data
+    graceful_shutdown(stdin, child);
 }
 
 #[test]
@@ -92,6 +111,6 @@ fn test_mcp_list_tools() {
     assert!(response.contains("search_papers"), "List tools response failed: {}", response);
     assert!(response.contains("fetch_paper"), "List tools response failed: {}", response);
 
-    let _ = child.kill();
-    let _ = child.wait();
+    // Graceful cleanup to flush coverage data
+    graceful_shutdown(stdin, child);
 }
