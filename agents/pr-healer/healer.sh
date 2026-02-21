@@ -12,7 +12,10 @@ LOG_FILE="agents/pr-healer/healer.log"
 echo "[$(date)] PR-Healer Daemon started" >> "$LOG_FILE"
 
 # Trap Ctrl+C to exit gracefully
-trap "echo '[Host] Caught SIGINT. Exiting daemon loop.'; exit 0" SIGINT
+trap 'echo "[Host] Caught SIGINT. Cleaning up..."; kill $CURRENT_PID 2>/dev/null; exit 0' SIGINT
+
+# Variable to hold the current child process ID for the trap
+CURRENT_PID=""
 
 # --- Orchestration Loop ---
 while :; do
@@ -31,16 +34,23 @@ while :; do
     devcontainer exec \
         --workspace-folder "$WORKSPACE_FOLDER" \
         --remote-env "GITHUB_TOKEN=$GITHUB_TOKEN" \
-        claude --dangerously-skip-permissions "$(cat agents/pr-healer/prompt.txt)" < /dev/null
+        claude --dangerously-skip-permissions "$(cat agents/pr-healer/prompt.txt)" < /dev/null &
+    
+    CURRENT_PID=$!
+    wait $CURRENT_PID
     
     # If Claude determines there's nothing left to do, it will touch this flag file.
     if [ -f "agents/pr-healer/ALL_CLEAR" ]; then
         echo "[Host] Claude reported all PRs are clean. Sleeping for 5 minutes before checking again..."
         rm -f agents/pr-healer/ALL_CLEAR
-        sleep 300
+        sleep 300 &
+        CURRENT_PID=$!
+        wait $CURRENT_PID
         continue
     fi
     
     echo "[Host] Healer agent finished a turn. Restarting loop..."
-    sleep 2
+    sleep 2 &
+    CURRENT_PID=$!
+    wait $CURRENT_PID
 done
