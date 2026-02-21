@@ -52,16 +52,36 @@ fn test_config_list() {
 
 #[test]
 fn test_config_set_get_headless() {
-    cargo_bin_cmd!("arxiv-cli").args(["config", "set", "headless", "false"]).assert().success();
+    let temp_dir = tempfile::tempdir().unwrap();
+    // Isolate config directory
+    cargo_bin_cmd!("arxiv-cli")
+        .env("HOME", temp_dir.path())
+        .env("XDG_CONFIG_HOME", temp_dir.path())
+        .env("APPDATA", temp_dir.path())
+        .env("USERPROFILE", temp_dir.path())
+        .args(["config", "set", "headless", "false"])
+        .assert()
+        .success();
 
     cargo_bin_cmd!("arxiv-cli")
+        .env("HOME", temp_dir.path())
+        .env("XDG_CONFIG_HOME", temp_dir.path())
+        .env("APPDATA", temp_dir.path())
+        .env("USERPROFILE", temp_dir.path())
         .args(["config", "get", "headless"])
         .assert()
         .success()
         .stdout(predicate::str::contains("false"));
 
     // Reset to default
-    cargo_bin_cmd!("arxiv-cli").args(["config", "set", "headless", "true"]).assert().success();
+    cargo_bin_cmd!("arxiv-cli")
+        .env("HOME", temp_dir.path())
+        .env("XDG_CONFIG_HOME", temp_dir.path())
+        .env("APPDATA", temp_dir.path())
+        .env("USERPROFILE", temp_dir.path())
+        .args(["config", "set", "headless", "true"])
+        .assert()
+        .success();
 }
 
 #[test]
@@ -115,7 +135,6 @@ fn test_head_flag_exists() {
 // We use small limits and specific IDs to keep them fast.
 
 #[test]
-#[ignore = "requires network and browser"]
 fn test_search_execution() {
     cargo_bin_cmd!("arxiv-cli")
         .args(["search", "--query", "LLM", "--limit", "1"])
@@ -127,7 +146,6 @@ fn test_search_execution() {
 }
 
 #[test]
-#[ignore = "requires network and browser"]
 fn test_fetch_execution() {
     cargo_bin_cmd!("arxiv-cli")
         .args(["fetch", "2301.00001"])
