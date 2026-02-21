@@ -30,6 +30,19 @@ EOF
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.bashrc
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.zshrc
 
+    echo "[Devcontainer Setup] Configuring mise..."
+    echo 'eval "$(mise activate bash)"' >> $HOME/.bashrc
+    echo 'eval "$(mise activate zsh)"' >> $HOME/.zshrc
+
+    # Run mise install
+    if command -v mise >/dev/null 2>&1; then
+        echo "[Devcontainer Setup] Installing tools with mise..."
+        mise trust
+        mise install
+    else
+        echo "[Devcontainer Setup] WARNING: mise is not installed."
+    fi
+
     echo "[Devcontainer Setup] Authenticating claude..."
     if [ -n "$Z_AI_API_KEY" ]; then
         npx -y @z_ai/coding-helper auth glm_coding_plan_global "$Z_AI_API_KEY"
