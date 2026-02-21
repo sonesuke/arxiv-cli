@@ -22,7 +22,7 @@ arXiv CLI — A Rust-based command-line tool for searching and fetching papers f
 
 ### Language
 
-- Code comments and commit messages: **English**
+- Code comments, commit messages, and **Pull Requests**: **English**
 - Responses to the user: **日本語**
 
 ## Project Structure

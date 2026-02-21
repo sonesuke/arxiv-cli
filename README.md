@@ -1,6 +1,6 @@
-# arXiv CLI
+# arXiv CLI - AI-ready 🚀
 
-A Rust-based command-line tool for searching and fetching papers from arXiv. It retrieves paper metadata (title, summary, authors, published date) and keeps structured data in JSON format. It also supports downloading PDFs and extracting text content as paragraphs.
+An AI-ready search and fetch tool for arXiv papers, designed for both humans and AI agents.
 
 ## Features
 - **Search papers** by free-text query.
@@ -10,6 +10,7 @@ A Rust-based command-line tool for searching and fetching papers from arXiv. It 
 - **Date filtering** with `--before` and `--after`.
 - **Raw PDF download** with `--raw` flag.
 - **Headless mode** by default; use `--head` to show the browser.
+- **Model Context Protocol (MCP)** support to integrate with AI agents.
 - **Robust formatting**: Uses structured JSON for easy machine consumption.
 
 ## Installation
@@ -62,6 +63,35 @@ Useful for debugging.
 arxiv-cli search --query "AI" --head
 ```
 
+## Model Context Protocol (MCP)
+
+`arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
+
+### Available Tools
+- `search_papers`: Search arXiv for papers matching a query.
+- `fetch_paper`: Fetch details of a specific paper by its arXiv ID.
+
+### Usage
+To start the MCP server over `stdio`:
+```bash
+arxiv-cli mcp
+```
+
+### Configuration for Claude Desktop
+
+Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "arxiv-cli": {
+      "command": "/path/to/arxiv-cli",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
 ## Configuration
 This tool relies on a compatible Chrome/Chromium installation for scraping.
 Config file location:
@@ -88,7 +118,7 @@ arxiv-cli config path
 ```
 
 ## Implementation Details
-- **Stack**: Rust, Clap, Headless Chrome, Serde, Reqwest, PDF-Extract.
+- **Stack**: Rust, Clap, Headless Chrome, Serde, Reqwest, PDF-Extract, `mcp-sdk-rs`.
 - **PDF Extraction**: Downloads the PDF and extracts text, splitting it into structured paragraphs (`description_paragraphs`).
 
 ## License

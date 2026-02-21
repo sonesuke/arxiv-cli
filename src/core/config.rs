@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use super::{ArxivError, Result};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -27,11 +27,12 @@ impl Config {
             return Ok(Self::default());
         }
 
-        let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read config file at {:?}", path))?;
+        let content = fs::read_to_string(path).map_err(|e| {
+            ArxivError::Config(format!("Failed to read config file at {:?}: {}", path, e))
+        })?;
 
-        let config: Config =
-            serde_json::from_str(&content).with_context(|| "Failed to parse config file")?;
+        let config: Config = serde_json::from_str(&content)
+            .map_err(|e| ArxivError::Config(format!("Failed to parse config file: {}", e)))?;
 
         Ok(config)
     }
@@ -43,32 +44,40 @@ impl Config {
 
     pub fn save_to(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create config directory at {:?}", parent))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                ArxivError::Config(format!(
+                    "Failed to create config directory at {:?}: {}",
+                    parent, e
+                ))
+            })?;
         }
 
         let content = serde_json::to_string_pretty(self)?;
-        fs::write(path, content)
-            .with_context(|| format!("Failed to write config file at {:?}", path))?;
+        fs::write(path, content).map_err(|e| {
+            ArxivError::Config(format!("Failed to write config file at {:?}: {}", path, e))
+        })?;
 
         Ok(())
     }
 
     pub fn config_path() -> Result<PathBuf> {
-        let project_dirs = ProjectDirs::from("com", "sonesuke", "arxiv-cli")
-            .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
+        let project_dirs = ProjectDirs::from("com", "sonesuke", "arxiv-cli").ok_or_else(|| {
+            ArxivError::Config("Could not determine config directory".to_string())
+        })?;
         Ok(project_dirs.config_dir().join("config.json"))
     }
 
     pub fn set(&mut self, key: &str, value: &str) -> Result<()> {
         match key {
             "headless" => {
-                self.headless = value.parse().with_context(|| "Invalid boolean for headless")?;
+                self.headless = value
+                    .parse()
+                    .map_err(|_| ArxivError::Config("Invalid boolean for headless".to_string()))?;
             }
             "browser_path" => {
                 self.browser_path = if value.is_empty() { None } else { Some(value.to_string()) };
             }
-            _ => anyhow::bail!("Unknown config key: {}", key),
+            _ => return Err(ArxivError::Config(format!("Unknown config key: {}", key))),
         }
         Ok(())
     }
@@ -77,7 +86,7 @@ impl Config {
         match key {
             "headless" => Ok(self.headless.to_string()),
             "browser_path" => Ok(self.browser_path.clone().unwrap_or_default()),
-            _ => anyhow::bail!("Unknown config key: {}", key),
+            _ => Err(ArxivError::Config(format!("Unknown config key: {}", key))),
         }
     }
 }

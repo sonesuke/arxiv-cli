@@ -10,13 +10,16 @@ futures = "0.3.30"
 pdf-extract = "0.10.0"
 reqwest = { version = "0.12.24", features = ["blocking", "json"] }
 serde = { version = "1.0.228", features = ["derive"] }
+async-trait = "0.1"
 serde_json = "1.0.145"
 tempfile = "3.23.0"
+thiserror = "1.0"
 tokio = { version = "1.48.0", features = ["full"] }
 tokio-tungstenite = { version = "0.26.1", features = ["native-tls"] }
 urlencoding = "2.1.3"
 uuid = { version = "1.11.0", features = ["v4"] }
 directories = "6.0.0"
+mcp-sdk-rs = "0.3.4"
 
 [dev-dependencies]
 assert_cmd = "2"
@@ -25,3 +28,7 @@ predicates = "3"
 [[test]]
 name = "e2e_cli"
 path = "e2e/cli.rs"
+
+[[test]]
+name = "e2e_mcp"
+path = "e2e/mcp.rs"

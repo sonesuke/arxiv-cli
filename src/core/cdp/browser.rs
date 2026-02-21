@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use crate::core::{ArxivError, Result};
 use serde_json::Value;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -42,11 +42,9 @@ impl CdpBrowser {
         });
 
         // Create a temporary user data directory with a unique ID
-
-        // Create a temporary user data directory with a unique ID
         let unique_id = uuid::Uuid::new_v4();
         let temp_dir = std::env::temp_dir().join(format!("chrome-{}", unique_id));
-        std::fs::create_dir_all(&temp_dir)?;
+        std::fs::create_dir_all(&temp_dir).map_err(ArxivError::Io)?;
 
         let mut cmd = Command::new(&chrome_path);
         cmd.arg("--remote-debugging-port=0"); // Let OS assign a random port
@@ -63,12 +61,12 @@ impl CdpBrowser {
         // Always capture stderr to read the assigned port
         // Use a temporary file for stderr to avoid buffering issues with pipes
         let stderr_file = temp_dir.join("chrome_stderr.log");
-        let stderr_handle = std::fs::File::create(&stderr_file)?;
+        let stderr_handle = std::fs::File::create(&stderr_file).map_err(ArxivError::Io)?;
 
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::from(stderr_handle));
 
-        let process = cmd.spawn()?;
+        let process = cmd.spawn().map_err(ArxivError::Io)?;
 
         // Read the port from the stderr file
         let port = Arc::new(Mutex::new(None::<u16>));
@@ -87,8 +85,6 @@ impl CdpBrowser {
             // Poll the file for the port message
             for _ in 0..100 {
                 // Try for 10 seconds
-                // We need to re-open or seek to read new content, but simple polling works for now
-                // Actually, let's just read the whole file each time since it's small
                 if let Ok(content) = std::fs::read_to_string(&stderr_path) {
                     for line in content.lines() {
                         if debug_flag && line.contains("DevTools listening on") {
@@ -124,9 +120,10 @@ impl CdpBrowser {
                 }
                 std::thread::sleep(Duration::from_millis(100));
             }
-            Err(anyhow!("Failed to discover Chrome debugging port"))
+            Err(ArxivError::Cdp("Failed to discover Chrome debugging port".to_string()))
         })
-        .await??;
+        .await
+        .map_err(|e| ArxivError::Cdp(format!("Join error: {}", e)))??;
 
         // Wait for Chrome to start and expose the debugging port
         // Retry get_ws_url with backoff instead of fixed sleep
@@ -156,7 +153,9 @@ impl CdpBrowser {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| anyhow!("Failed to get WebSocket URL after retries")))
+        Err(last_error.unwrap_or_else(|| {
+            ArxivError::Cdp("Failed to get WebSocket URL after retries".to_string())
+        }))
     }
 
     /// Get WebSocket debugger URL from Chrome
@@ -172,7 +171,7 @@ impl CdpBrowser {
         response["webSocketDebuggerUrl"]
             .as_str()
             .map(String::from)
-            .ok_or_else(|| anyhow!("Could not find webSocketDebuggerUrl"))
+            .ok_or_else(|| ArxivError::Cdp("Could not find webSocketDebuggerUrl".to_string()))
     }
 
     /// Create a new page and return its WebSocket URL
@@ -185,10 +184,9 @@ impl CdpBrowser {
             .json()
             .await?;
 
-        response["webSocketDebuggerUrl"]
-            .as_str()
-            .map(String::from)
-            .ok_or_else(|| anyhow!("Could not find webSocketDebuggerUrl for new page"))
+        response["webSocketDebuggerUrl"].as_str().map(String::from).ok_or_else(|| {
+            ArxivError::Cdp("Could not find webSocketDebuggerUrl for new page".to_string())
+        })
     }
 }
 
