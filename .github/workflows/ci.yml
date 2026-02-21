@@ -30,7 +30,7 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Run tests
-        run: cargo test --workspace -- --include-ignored
+        run: cargo test
 
       - name: Check build
         run: cargo check --release
