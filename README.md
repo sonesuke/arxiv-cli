@@ -15,12 +15,18 @@ An AI-ready search and fetch tool for arXiv papers, designed for both humans and
 
 ## Installation
 
-### From Release (Recommended)
-You can download the pre-built binaries from the [releases page](https://github.com/sonesuke/arxiv-cli/releases).
+### Easy Install (Recommended)
 
-1. Download the archive for your OS.
-2. Extract the archive.
-3. Move the binary to a location in your `PATH` (e.g. `/usr/local/bin`).
+**Linux & macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonesuke/arxiv-cli/main/install.sh | bash
+```
+> Note: On Linux, this installs to `~/.local/bin` without requiring `sudo`. Make sure `~/.local/bin` is in your `PATH`.
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/sonesuke/arxiv-cli/main/install.ps1 | iex
+```
 
 ### From Source (Cargo)
 If you have Rust installed, you can build from source:
@@ -28,7 +34,49 @@ If you have Rust installed, you can build from source:
 cargo install --path .
 ```
 
+## Model Context Protocol (MCP)
+
+`arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
+
+### Available Tools
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` |
+| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `paper_id` (required, e.g., "2512.04518") |
+
+### Usage
+To start the MCP server over `stdio`:
+```bash
+arxiv-cli mcp
+```
+
+### Configuration for Claude Desktop
+
+Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "arxiv-cli": {
+      "command": "/path/to/arxiv-cli",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
 ## Usage
+
+### CLI Commands
+
+| Command | Description | Example |
+|---|---|---|
+| `search` | Search for papers matching a query. | `arxiv-cli search --query "LLM" --limit 10` |
+| `fetch` | Fetch a single paper's metadata and text. | `arxiv-cli fetch 2512.04518` |
+| `config` | Manage configuration settings. | `arxiv-cli config list` |
+| `mcp` | Start the MCP server over stdio. | `arxiv-cli mcp` |
+
 
 ### Search by query
 Search for papers matching a query.
@@ -61,35 +109,6 @@ arxiv-cli fetch 2512.04518 --raw > paper.pdf
 Useful for debugging.
 ```bash
 arxiv-cli search --query "AI" --head
-```
-
-## Model Context Protocol (MCP)
-
-`arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
-
-### Available Tools
-- `search_papers`: Search arXiv for papers matching a query.
-- `fetch_paper`: Fetch details of a specific paper by its arXiv ID.
-
-### Usage
-To start the MCP server over `stdio`:
-```bash
-arxiv-cli mcp
-```
-
-### Configuration for Claude Desktop
-
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "arxiv-cli": {
-      "command": "/path/to/arxiv-cli",
-      "args": ["mcp"]
-    }
-  }
-}
 ```
 
 ## Configuration
