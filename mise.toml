@@ -9,3 +9,11 @@ run = "RUSTFLAGS=\"-D warnings\" cargo test --all-targets"
 
 [tasks.pre-commit]
 depends = ["fmt", "clippy", "test"]
+
+[tasks.coverage]
+run = """
+eval "$(cargo llvm-cov show-env --sh)"
+cargo llvm-cov clean --workspace
+cargo test
+cargo llvm-cov report --summary-only
+"""
