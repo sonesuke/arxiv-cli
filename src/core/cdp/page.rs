@@ -67,4 +67,10 @@ impl CdpPage {
 
         Ok(result["result"]["value"].clone())
     }
+
+    /// Close the page/tab
+    pub async fn close(&self) -> Result<()> {
+        self.connection.send_command("Page.close", json!({})).await?;
+        Ok(())
+    }
 }
