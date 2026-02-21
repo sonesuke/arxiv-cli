@@ -6,10 +6,7 @@ set -e
 
 # --- Configuration ---
 WORKSPACE_FOLDER=$(pwd)
-LOG_FILE="agents/pr-healer/healer.log"
-
-# --- Initialization ---
-echo "[$(date)] PR-Healer Daemon started" >> "$LOG_FILE"
+GITHUB_TOKEN=$(gh auth token)
 
 # Trap Ctrl+C to exit gracefully
 trap 'echo "[Host] Caught SIGINT. Cleaning up..."; kill $CURRENT_PID 2>/dev/null; exit 0' SIGINT
@@ -26,15 +23,18 @@ while :; do
     # Remove the ALL_CLEAR flag before each run
     rm -f agents/pr-healer/ALL_CLEAR
     
-    # Run Claude inside the container. 
-    # Claude's intelligence takes over from here (discovering PRs, fixing, pushing).
-    # We pass standard input from /dev/null as requested by the user, which works 
-    # because devcontainer exec will not allocate an interactive TTY when stdin is closed here, 
-    # automatically bypassing the "Yes, I accept" screen.
+    # Run Claude inside the container using -p (print mode).
+    # -p mode skips the interactive workspace trust dialog and the
+    # --dangerously-skip-permissions warning entirely, while still
+    # executing tool calls (Bash, Read, Edit, etc.) autonomously.
+    # Output is streamed as JSON so we can parse it later if needed.
     devcontainer exec \
         --workspace-folder "$WORKSPACE_FOLDER" \
         --remote-env "GITHUB_TOKEN=$GITHUB_TOKEN" \
-        claude --dangerously-skip-permissions "$(cat agents/pr-healer/prompt.txt)" < /dev/null &
+        claude -p \
+          --dangerously-skip-permissions \
+          --output-format stream-json \
+          "$(cat agents/pr-healer/prompt.txt)" &
     
     CURRENT_PID=$!
     wait $CURRENT_PID
