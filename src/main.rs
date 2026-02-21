@@ -1,8 +1,9 @@
-mod arxiv_client;
+mod arxiv_search;
+mod cdp;
 mod config;
 mod models;
 
-use arxiv_client::ArxivClient;
+use arxiv_search::ArxivClient;
 use clap::{Parser, Subcommand};
 use config::Config;
 
@@ -10,6 +11,10 @@ use config::Config;
 #[command(name = "arxiv-cli")]
 #[command(about = "Search and fetch papers from Arxiv", long_about = None)]
 struct Cli {
+    /// Show browser window (disable headless mode)
+    #[arg(long)]
+    head: bool,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -91,7 +96,11 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let client = ArxivClient::new();
+    if cli.head {
+        config.headless = false;
+    }
+
+    let client = ArxivClient::new(&config).await?;
 
     match cli.command {
         Commands::Search { query, limit, after, before } => {

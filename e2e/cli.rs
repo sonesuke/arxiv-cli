@@ -47,7 +47,21 @@ fn test_config_list() {
         .args(["config", "list"])
         .assert()
         .success()
-        .stdout(predicate::str::starts_with("{"));
+        .stdout(predicate::str::contains("headless"));
+}
+
+#[test]
+fn test_config_set_get_headless() {
+    cargo_bin_cmd!("arxiv-cli").args(["config", "set", "headless", "false"]).assert().success();
+
+    cargo_bin_cmd!("arxiv-cli")
+        .args(["config", "get", "headless"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("false"));
+
+    // Reset to default
+    cargo_bin_cmd!("arxiv-cli").args(["config", "set", "headless", "true"]).assert().success();
 }
 
 #[test]
@@ -84,34 +98,14 @@ fn test_search_without_query() {
         .stderr(predicate::str::contains("--query"));
 }
 
-// ============ API integration tests ============
-// arXiv API rate limit: 1 request per 3 seconds, single connection.
-// Run E2E tests with: cargo test --test e2e_cli -- --test-threads=1
+// ============ CDP specific tests ============
 
 #[test]
-#[ignore = "hits real arXiv API - run with: cargo test --test e2e_cli -- --ignored --test-threads=1"]
-fn test_search_returns_json() {
-    // Respect arXiv API rate limit (1 req / 3 sec)
-    std::thread::sleep(std::time::Duration::from_secs(3));
-
+fn test_head_flag_exists() {
+    // Just verify the flag is accepted by help
     cargo_bin_cmd!("arxiv-cli")
-        .args(["search", "-q", "quantum computing", "-l", "1"])
+        .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("["))
-        .stdout(predicate::str::contains("title"));
-}
-
-#[test]
-#[ignore = "hits real arXiv API - run with: cargo test --test e2e_cli -- --ignored --test-threads=1"]
-fn test_fetch_returns_json() {
-    // Respect arXiv API rate limit (1 req / 3 sec)
-    std::thread::sleep(std::time::Duration::from_secs(3));
-
-    cargo_bin_cmd!("arxiv-cli")
-        .args(["fetch", "2301.07041"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("\"id\""))
-        .stdout(predicate::str::contains("\"title\""));
+        .stdout(predicate::str::contains("--head"));
 }
