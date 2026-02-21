@@ -33,6 +33,7 @@ while :; do
         --remote-env "GITHUB_TOKEN=$GITHUB_TOKEN" \
         claude -p \
           --dangerously-skip-permissions \
+          --verbose \
           --output-format stream-json \
           "$(cat agents/pr-healer/prompt.txt)" &
     
