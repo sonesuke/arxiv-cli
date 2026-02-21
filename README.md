@@ -36,6 +36,16 @@ cargo install --path .
 
 ## Usage
 
+### CLI Commands
+
+| Command | Description | Example |
+|---|---|---|
+| `search` | Search for papers matching a query. | `arxiv-cli search --query "LLM" --limit 10` |
+| `fetch` | Fetch a single paper's metadata and text. | `arxiv-cli fetch 2512.04518` |
+| `config` | Manage configuration settings. | `arxiv-cli config list` |
+| `mcp` | Start the MCP server over stdio. | `arxiv-cli mcp` |
+
+
 ### Search by query
 Search for papers matching a query.
 ```bash
@@ -74,8 +84,11 @@ arxiv-cli search --query "AI" --head
 `arxiv-cli` supports the [Model Context Protocol](https://modelcontextprotocol.io/), allowing AI agents (like Claude Desktop) to search and fetch papers directly.
 
 ### Available Tools
-- `search_papers`: Search arXiv for papers matching a query.
-- `fetch_paper`: Fetch details of a specific paper by its arXiv ID.
+
+| Tool Name | Description | Parameters |
+|---|---|---|
+| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` |
+| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `paper_id` (required, e.g., "2512.04518") |
 
 ### Usage
 To start the MCP server over `stdio`:
