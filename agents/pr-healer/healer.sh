@@ -35,7 +35,7 @@ while :; do
           --dangerously-skip-permissions \
           --verbose \
           --output-format stream-json \
-          "$(cat agents/pr-healer/prompt.txt)" 2>&1 | jq . &
+          "$(cat agents/pr-healer/prompt.txt)" 2>&1 | jq --unbuffered . &
     
     CURRENT_PID=$!
     wait $CURRENT_PID
