@@ -1,4 +1,4 @@
-# arXiv CLI - AI-ready 🚀
+# arXiv CLI - AI-ready
 
 An AI-ready search and fetch tool for arXiv papers, designed for both humans and AI agents.
 
@@ -66,7 +66,7 @@ Add this to your `claude_desktop_config.json`:
 }
 ```
 
-## Usage
+## CLI Usage
 
 ### CLI Commands
 
@@ -137,8 +137,9 @@ arxiv-cli config path
 ```
 
 ## Implementation Details
-- **Stack**: Rust, Clap, Headless Chrome, Serde, Reqwest, PDF-Extract, `mcp-sdk-rs`.
-- **PDF Extraction**: Downloads the PDF and extracts text, splitting it into structured paragraphs (`description_paragraphs`).
+- **Stack**: Rust, Clap, Custom CDP Client (`tokio-tungstenite`), Serde, Reqwest, PDF-Extract, `mcp-sdk-rs`.
+- **Search Scraping**: Uses a custom Chrome DevTools Protocol (CDP) client to handle dynamic search result loaded via JS.
+- **PDF Extraction**: Downloads the PDF and extracts text using `pdf-extract`, splitting it into structured paragraphs (`description_paragraphs`).
 
 ## License
 MIT
