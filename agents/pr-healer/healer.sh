@@ -23,6 +23,10 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 GITHUB_TOKEN=$(gh auth token)
+WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-$(pwd)}"
+
+echo "[Host] Ensuring dev container is up for $WORKSPACE_FOLDER..."
+devcontainer up --workspace-folder "$WORKSPACE_FOLDER"
 
 # Trap Ctrl+C to exit gracefully
 trap 'echo "[Host] Caught SIGINT. Cleaning up..."; kill $CURRENT_PID 2>/dev/null; exit 0' SIGINT
