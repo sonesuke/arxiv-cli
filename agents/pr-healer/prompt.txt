@@ -6,10 +6,13 @@ DO NOT SUMMARIZE. DO NOT EXPLAIN WHAT YOU WOULD DO. EXECUTE EVERY STEP BELOW IMM
    - This shows past decisions, blockers, and files changed by previous iterations.
    - Use this context to avoid repeating the same mistakes.
 
-2. DISCOVER "PREY" (Failed PRs):
-   - Use `gh pr list` to see all open pull requests.
-   - Check the CI status of PRs to identify which ones are failing.
-   - If there are NO failing PRs left, create the flag file:
+2. DISCOVER "PREY" (PRs needing attention):
+   - Use `gh pr list --json number,headRefName` to get all open pull requests.
+   - For each PR, check TWO conditions:
+     a) CI failures: `gh pr view <number> --json statusCheckRollup`
+     b) Behind main: `gh pr view <number> --json mergeStateStatus` (look for "BEHIND")
+   - A PR needs healing if CI is failing OR if it is BEHIND main.
+   - If there are NO PRs needing attention, create the flag file:
      touch agents/pr-healer/ALL_CLEAR
      Then terminate immediately.
 
