@@ -17,6 +17,7 @@ arXiv CLI — A Rust-based command-line tool for searching and fetching papers f
 ### Code Quality
 
 - Run `mise run pre-commit` before committing. This runs `cargo fmt --check`, `cargo clippy -D warnings`, and `cargo test`.
+- For code coverage, run `mise run coverage`. This is specially configured to measure coverage of subprocesses (like MCP server).
 - Follow existing patterns in the codebase.
 - Make small, focused changes.
 
@@ -47,3 +48,4 @@ mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
 | `mise run clippy` | Lint with `cargo clippy` |
 | `mise run test` | Run tests with `cargo test` |
 | `mise run pre-commit` | Run all of the above |
+| `mise run coverage` | Measure code coverage (including subprocesses) |
