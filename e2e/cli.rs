@@ -109,3 +109,30 @@ fn test_head_flag_exists() {
         .success()
         .stdout(predicate::str::contains("--head"));
 }
+
+// ============ Execution tests (Real network/browser) ============
+// Note: These tests depend on a working network and Chrome/Chromium installation.
+// We use small limits and specific IDs to keep them fast.
+
+#[test]
+#[ignore = "requires network and browser"]
+fn test_search_execution() {
+    cargo_bin_cmd!("arxiv-cli")
+        .args(["search", "--query", "LLM", "--limit", "1"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"title\""))
+        .stdout(predicate::str::contains("\"authors\""))
+        .stdout(predicate::str::contains("\"url\""));
+}
+
+#[test]
+#[ignore = "requires network and browser"]
+fn test_fetch_execution() {
+    cargo_bin_cmd!("arxiv-cli")
+        .args(["fetch", "2301.00001"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"title\""))
+        .stdout(predicate::str::contains("\"2301.00001\""));
+}

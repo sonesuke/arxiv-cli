@@ -84,11 +84,8 @@ impl ArxivClient {
             }
 
             let js_script = include_str!("scripts/extract_search_results.js");
-
             let value = tab.evaluate(js_script).await?;
-
-            let json_str: String = serde_json::from_value(value)?;
-            let papers: Vec<Paper> = serde_json::from_str(&json_str)?;
+            let papers = Self::parse_search_results(value)?;
 
             if papers.is_empty() {
                 break;
@@ -131,11 +128,8 @@ impl ArxivClient {
         }
 
         let js_script = include_str!("scripts/extract_paper.js");
-
         let value = tab.evaluate(js_script).await?;
-
-        let json_str: String = serde_json::from_value(value)?;
-        let mut paper: Paper = serde_json::from_str(&json_str)?;
+        let mut paper = Self::parse_fetch_result(value)?;
 
         // Fetch PDF and extract text
         if !paper.pdf_url.is_empty() {
@@ -225,6 +219,18 @@ impl ArxivClient {
             format!("https://arxiv.org/abs/{}", id)
         }
     }
+
+    fn parse_search_results(value: serde_json::Value) -> Result<Vec<Paper>> {
+        let json_str: String = serde_json::from_value(value)?;
+        let papers: Vec<Paper> = serde_json::from_str(&json_str)?;
+        Ok(papers)
+    }
+
+    fn parse_fetch_result(value: serde_json::Value) -> Result<Paper> {
+        let json_str: String = serde_json::from_value(value)?;
+        let paper: Paper = serde_json::from_str(&json_str)?;
+        Ok(paper)
+    }
 }
 
 #[cfg(test)]
@@ -276,5 +282,60 @@ mod tests {
         assert!(url.contains("date-from_date=&"));
         assert!(url.contains("date-to_date=2023-10-13"));
         assert!(url.contains("terms-0-term=conversational%20data%20analysis"));
+    }
+
+    #[test]
+    fn test_parse_search_results_valid() {
+        let paper_json = serde_json::json!({
+            "id": "2301.00001",
+            "title": "Test Title",
+            "authors": ["Author A"],
+            "published_date": "2023-01-01",
+            "summary": "Test Summary",
+            "url": "https://arxiv.org/abs/2301.00001",
+            "pdf_url": "https://arxiv.org/pdf/2301.00001"
+        });
+        let papers_json = serde_json::json!(
+            vec![paper_json].iter().map(|p| serde_json::to_string(p).unwrap()).collect::<Vec<_>>()
+        );
+        // Wait, the script returns a JSON string of an array of objects?
+        // Let's re-verify the script output format.
+        // Actually, the script extract_search_results.js usually returns JSON.stringify(results)
+        let results = vec![Paper {
+            id: "2301.00001".to_string(),
+            title: "Test Title".to_string(),
+            authors: vec!["Author A".to_string()],
+            published_date: "2023-01-01".to_string(),
+            summary: "Test Summary".to_string(),
+            url: "https://arxiv.org/abs/2301.00001".to_string(),
+            pdf_url: "https://arxiv.org/pdf/2301.00001".to_string(),
+            description_paragraphs: None,
+        }];
+        let json_str = serde_json::to_string(&results).unwrap();
+        let value = serde_json::to_value(json_str).unwrap();
+
+        let parsed = ArxivClient::parse_search_results(value).unwrap();
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].id, "2301.00001");
+    }
+
+    #[test]
+    fn test_parse_fetch_result_valid() {
+        let paper = Paper {
+            id: "2301.00001".to_string(),
+            title: "Test Title".to_string(),
+            authors: vec!["Author A".to_string()],
+            published_date: "2023-01-01".to_string(),
+            summary: "Test Summary".to_string(),
+            url: "https://arxiv.org/abs/2301.00001".to_string(),
+            pdf_url: "https://arxiv.org/pdf/2301.00001".to_string(),
+            description_paragraphs: None,
+        };
+        let json_str = serde_json::to_string(&paper).unwrap();
+        let value = serde_json::to_value(json_str).unwrap();
+
+        let parsed = ArxivClient::parse_fetch_result(value).unwrap();
+        assert_eq!(parsed.id, "2301.00001");
+        assert_eq!(parsed.title, "Test Title");
     }
 }
