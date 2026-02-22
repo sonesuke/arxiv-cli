@@ -16,13 +16,7 @@ case "$ARCH" in
 esac
 
 case "$OS" in
-    linux) 
-        if [ "$ARCH" = "arm64" ]; then
-            echo "Error: Linux ARM64 is not supported. Use x86_64 or macOS."
-            exit 1
-        fi
-        PLATFORM="linux-${ARCH}" 
-        ;;
+    linux) PLATFORM="linux-${ARCH}" ;;
     darwin) PLATFORM="macos-${ARCH}" ;;
     *) echo "Unsupported OS: $OS"; exit 1 ;;
 esac
