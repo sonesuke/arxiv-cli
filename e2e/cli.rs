@@ -136,9 +136,31 @@ fn test_head_flag_exists() {
 
 #[test]
 fn test_search_execution() {
-    cargo_bin_cmd!("arxiv-cli")
-        .args(["search", "--query", "LLM", "--limit", "1"])
-        .assert()
+    // Log environment info for debugging
+    eprintln!("=== Environment Debug Info ===");
+    eprintln!("PATH: {:?}", std::env::var("PATH"));
+    eprintln!("CHROME_BIN: {:?}", std::env::var("CHROME_BIN"));
+    eprintln!("HOME: {:?}", std::env::var("HOME"));
+    eprintln!("Which chrome: {:?}", std::process::Command::new("which").arg("chrome").output());
+    eprintln!(
+        "Which google-chrome: {:?}",
+        std::process::Command::new("which").arg("google-chrome").output()
+    );
+    eprintln!("Which chromium: {:?}", std::process::Command::new("which").arg("chromium").output());
+    eprintln!(
+        "Which chromium-browser: {:?}",
+        std::process::Command::new("which").arg("chromium-browser").output()
+    );
+    eprintln!("================================");
+
+    let result =
+        cargo_bin_cmd!("arxiv-cli").args(["search", "--query", "LLM", "--limit", "1"]).assert();
+
+    eprintln!("STDOUT: {}", String::from_utf8_lossy(&result.get_output().stdout));
+    eprintln!("STDERR: {}", String::from_utf8_lossy(&result.get_output().stderr));
+    eprintln!("EXIT CODE: {:?}", result.get_output().status.code());
+
+    result
         .success()
         .stdout(predicate::str::contains("\"title\""))
         .stdout(predicate::str::contains("\"authors\""))
@@ -147,9 +169,30 @@ fn test_search_execution() {
 
 #[test]
 fn test_fetch_execution() {
-    cargo_bin_cmd!("arxiv-cli")
-        .args(["fetch", "2301.00001"])
-        .assert()
+    // Log environment info for debugging
+    eprintln!("=== Environment Debug Info ===");
+    eprintln!("PATH: {:?}", std::env::var("PATH"));
+    eprintln!("CHROME_BIN: {:?}", std::env::var("CHROME_BIN"));
+    eprintln!("HOME: {:?}", std::env::var("HOME"));
+    eprintln!("Which chrome: {:?}", std::process::Command::new("which").arg("chrome").output());
+    eprintln!(
+        "Which google-chrome: {:?}",
+        std::process::Command::new("which").arg("google-chrome").output()
+    );
+    eprintln!("Which chromium: {:?}", std::process::Command::new("which").arg("chromium").output());
+    eprintln!(
+        "Which chromium-browser: {:?}",
+        std::process::Command::new("which").arg("chromium-browser").output()
+    );
+    eprintln!("================================");
+
+    let result = cargo_bin_cmd!("arxiv-cli").args(["fetch", "2301.00001"]).assert();
+
+    eprintln!("STDOUT: {}", String::from_utf8_lossy(&result.get_output().stdout));
+    eprintln!("STDERR: {}", String::from_utf8_lossy(&result.get_output().stderr));
+    eprintln!("EXIT CODE: {:?}", result.get_output().status.code());
+
+    result
         .success()
         .stdout(predicate::str::contains("\"title\""))
         .stdout(predicate::str::contains("\"2301.00001\""));
