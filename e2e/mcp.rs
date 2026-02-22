@@ -40,11 +40,12 @@ fn test_mcp_initialize() {
         "id": 1,
         "method": "initialize",
         "params": {
-            "implementation": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {
                 "name": "test-client",
                 "version": "1.0.0"
-            },
-            "capabilities": {}
+            }
         }
     });
 
@@ -81,8 +82,9 @@ fn test_mcp_list_tools() {
         "id": 1,
         "method": "initialize",
         "params": {
-            "implementation": { "name": "test", "version": "1.0" },
-            "capabilities": {}
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": { "name": "test", "version": "1.0" }
         }
     });
     writeln!(stdin, "{}", init_request).unwrap();
@@ -93,7 +95,7 @@ fn test_mcp_list_tools() {
     // 2. Initialized notification
     let initialized_notification = json!({
         "jsonrpc": "2.0",
-        "method": "initialized"
+        "method": "notifications/initialized"
     });
     writeln!(stdin, "{}", initialized_notification).unwrap();
 
