@@ -136,9 +136,14 @@ fn test_head_flag_exists() {
 
 #[test]
 fn test_search_execution() {
-    cargo_bin_cmd!("arxiv-cli")
-        .args(["search", "--query", "LLM", "--limit", "1"])
-        .assert()
+    let result =
+        cargo_bin_cmd!("arxiv-cli").args(["search", "--query", "LLM", "--limit", "1"]).assert();
+
+    eprintln!("STDOUT: {}", String::from_utf8_lossy(&result.get_output().stdout));
+    eprintln!("STDERR: {}", String::from_utf8_lossy(&result.get_output().stderr));
+    eprintln!("EXIT CODE: {:?}", result.get_output().status.code());
+
+    result
         .success()
         .stdout(predicate::str::contains("\"title\""))
         .stdout(predicate::str::contains("\"authors\""))
@@ -147,9 +152,13 @@ fn test_search_execution() {
 
 #[test]
 fn test_fetch_execution() {
-    cargo_bin_cmd!("arxiv-cli")
-        .args(["fetch", "2301.00001"])
-        .assert()
+    let result = cargo_bin_cmd!("arxiv-cli").args(["fetch", "2301.00001"]).assert();
+
+    eprintln!("STDOUT: {}", String::from_utf8_lossy(&result.get_output().stdout));
+    eprintln!("STDERR: {}", String::from_utf8_lossy(&result.get_output().stderr));
+    eprintln!("EXIT CODE: {:?}", result.get_output().status.code());
+
+    result
         .success()
         .stdout(predicate::str::contains("\"title\""))
         .stdout(predicate::str::contains("\"2301.00001\""));
