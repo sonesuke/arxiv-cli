@@ -9,6 +9,10 @@ pub struct Cli {
     #[arg(long)]
     pub head: bool,
 
+    /// Verbose output (show debug information)
+    #[arg(long)]
+    pub verbose: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -103,7 +107,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Search { query, limit, after, before } => {
-            let papers = client.search(&query, limit, after, before).await?;
+            let papers = client.search(&query, limit, after, before, cli.verbose).await?;
             let json = serde_json::to_string_pretty(&papers)?;
             println!("{}", json);
         }

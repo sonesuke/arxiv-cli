@@ -18,11 +18,17 @@ impl ArxivClient {
         limit: Option<usize>,
         after: Option<String>,
         before: Option<String>,
+        verbose: bool,
     ) -> Result<Vec<Paper>> {
         let mut all_papers = Vec::new();
         let limit_val = limit.unwrap_or(usize::MAX);
         let chunk_size = 50;
         let mut start = 0;
+
+        if verbose {
+            eprintln!("[VERBOSE] Starting search for query: '{}'", query);
+            eprintln!("[VERBOSE] limit={:?}, after={:?}, before={:?}", limit, after, before);
+        }
 
         loop {
             if all_papers.len() >= limit_val {
@@ -31,9 +37,18 @@ impl ArxivClient {
 
             let browser = self.browser_manager.get_browser().await?;
             let ws_url = browser.new_page().await?;
-            let tab = CdpPage::new(&ws_url).await?;
+
+            if verbose {
+                eprintln!("[VERBOSE] Created new page: {}", ws_url);
+            }
+
+            let tab = CdpPage::new_with_verbose(&ws_url, verbose).await?;
 
             let url = Self::build_search_url(query, start, &after, &before);
+
+            if verbose {
+                eprintln!("[VERBOSE] Navigating to: {}", url);
+            }
 
             tab.goto(&url).await?;
 
@@ -64,6 +79,10 @@ impl ArxivClient {
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             }
 
+            if verbose {
+                eprintln!("[VERBOSE] Page status: {}", status);
+            }
+
             if status == "abstract" {
                 let js_script = include_str!("scripts/extract_paper.js");
                 let value = tab.evaluate(js_script).await?;
@@ -85,6 +104,10 @@ impl ArxivClient {
 
             let json_str: String = serde_json::from_value(value)?;
             let papers: Vec<Paper> = serde_json::from_str(&json_str)?;
+
+            if verbose {
+                eprintln!("[VERBOSE] Extracted {} papers from this page", papers.len());
+            }
 
             let _ = tab.close().await;
 

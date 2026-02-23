@@ -23,28 +23,29 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Check Chrome installation
+      - name: Setup Chrome configuration
         run: |
-          echo "=== Checking Chrome installation ==="
-          which google-chrome || echo "google-chrome not found"
-          which chrome || echo "chrome not found"
-          which chromium || echo "chromium not found"
-          which chromium-browser || echo "chromium-browser not found"
-          ls -la /usr/bin/ | grep -i chrome || echo "No chrome in /usr/bin"
-          echo "===================================="
+          # Check if Chrome exists in standard locations
+          if [ -f "/usr/bin/google-chrome" ]; then
+            CHROME_PATH="/usr/bin/google-chrome"
+          elif [ -f "/usr/bin/chromium-browser" ]; then
+            CHROME_PATH="/usr/bin/chromium-browser"
+          else
+            echo "ERROR: Chrome/Chromium not found"
+            exit 1
+          fi
 
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
+          echo "Found Chrome at: $CHROME_PATH"
+          $CHROME_PATH --version
 
-      - name: Verify Chrome installation
-        run: |
-          echo "=== After Chrome setup ==="
-          which google-chrome || echo "google-chrome not found"
-          which chrome || echo "chrome not found"
-          google-chrome --version || echo "Failed to get version"
-          echo "=========================="
+          # Create config directory and set browser path
+          mkdir -p ~/.config/arxiv-cli
+          cat > ~/.config/arxiv-cli/config.toml << EOF
+          browser_path = "$CHROME_PATH"
+          EOF
+
+          echo "Config file created:"
+          cat ~/.config/arxiv-cli/config.toml
 
       - name: Check formatting
         run: cargo fmt -- --check

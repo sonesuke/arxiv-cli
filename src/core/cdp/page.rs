@@ -8,18 +8,24 @@ use super::connection::CdpConnection;
 /// CDP Page for browser automation
 pub struct CdpPage {
     connection: CdpConnection,
+    verbose: bool,
 }
 
 impl CdpPage {
     /// Create a new page with the given connection
     pub async fn new(ws_url: &str) -> Result<Self> {
+        Self::new_with_verbose(ws_url, false).await
+    }
+
+    /// Create a new page with verbose mode
+    pub async fn new_with_verbose(ws_url: &str, verbose: bool) -> Result<Self> {
         let connection = CdpConnection::connect(ws_url).await?;
 
         // Enable necessary domains
         connection.send_command("Page.enable", json!({})).await?;
         connection.send_command("Runtime.enable", json!({})).await?;
 
-        Ok(Self { connection })
+        Ok(Self { connection, verbose })
     }
 
     /// Navigate to a URL
@@ -65,7 +71,16 @@ impl CdpPage {
             return Err(ArxivError::Cdp(format!("JavaScript error: {:?}", exception)));
         }
 
-        Ok(result["result"]["value"].clone())
+        let value = result["result"]["value"].clone();
+
+        if self.verbose {
+            eprintln!(
+                "[VERBOSE] JS evaluate result: {}",
+                serde_json::to_string_pretty(&value).unwrap_or_else(|_| format!("{:?}", value))
+            );
+        }
+
+        Ok(value)
     }
 
     /// Close the page/tab

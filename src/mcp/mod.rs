@@ -60,7 +60,7 @@ impl ArxivHandler {
     ) -> Result<String, ErrorData> {
         let SearchPapersRequest { query, limit, before, after } = request;
 
-        match self.client.search(&query, limit, after, before).await {
+        match self.client.search(&query, limit, after, before, false).await {
             Ok(papers) => Ok(serde_json::to_string_pretty(&papers)
                 .unwrap_or_else(|_| "Failed to serialize papers".to_string())),
             Err(e) => Ok(format!("Search failed: {}", e)),
