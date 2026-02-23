@@ -6,8 +6,14 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Config {
+    #[serde(default = "default_headless")]
     pub headless: bool,
+    #[serde(default)]
     pub browser_path: Option<String>,
+}
+
+fn default_headless() -> bool {
+    true
 }
 
 impl Default for Config {
@@ -141,6 +147,18 @@ mod tests {
 
     #[test]
     fn test_load_from_valid_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        let mut file = std::fs::File::create(&path).unwrap();
+        writeln!(file, "{{\"headless\": false, \"browser_path\": \"/usr/bin/chrome\"}}").unwrap();
+
+        let config = Config::load_from(&path).unwrap();
+        assert!(!config.headless);
+        assert_eq!(config.browser_path, Some("/usr/bin/chrome".to_string()));
+    }
+
+    #[test]
+    fn test_load_from_valid_json_legacy() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
         let mut file = std::fs::File::create(&path).unwrap();

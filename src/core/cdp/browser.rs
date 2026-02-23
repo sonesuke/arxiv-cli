@@ -1,6 +1,5 @@
 use crate::core::{ArxivError, Result};
 use serde_json::Value;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -67,7 +66,7 @@ impl CdpBrowser {
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::from(stderr_handle));
 
-        let process = cmd.spawn().map_err(ArxivError::Io)?;
+        let mut process = cmd.spawn().map_err(ArxivError::Io)?;
 
         // Read the port from the stderr file
         let port = Arc::new(StdMutex::new(None::<u16>));
@@ -75,17 +74,11 @@ impl CdpBrowser {
         let stderr_path = stderr_file.clone();
         let debug_flag = debug;
 
-        // Spawn a thread to read the file and extract the port
-        std::thread::spawn(move || {
-            let file = match std::fs::File::open(&stderr_path) {
-                Ok(f) => f,
-                Err(_) => return,
-            };
-            let _reader = BufReader::new(file);
-
-            // Poll the file for the port message
-            for _ in 0..100 {
-                // Try for 10 seconds
+        // Spawn a thread to read stderr and look for the port
+        tokio::spawn(async move {
+            let start = std::time::Instant::now();
+            // Try for up to 30 seconds (CI environments may be slower)
+            while start.elapsed().as_secs() < 30 {
                 if let Ok(content) = std::fs::read_to_string(&stderr_path) {
                     for line in content.lines() {
                         if debug_flag && line.contains("DevTools listening on") {
@@ -107,13 +100,13 @@ impl CdpBrowser {
                         }
                     }
                 }
-                std::thread::sleep(Duration::from_millis(100));
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
         });
 
-        // Wait for the port to be discovered (up to 10 seconds)
+        // Wait for the port to be discovered (up to 30 seconds for slower CI environments)
         let discovered_port = tokio::task::spawn_blocking(move || {
-            for _ in 0..100 {
+            for _ in 0..300 {
                 let port_val = port.lock().map_or(None, |guard| *guard);
 
                 if let Some(p) = port_val {
@@ -128,8 +121,44 @@ impl CdpBrowser {
 
         // Wait for Chrome to start and expose the debugging port
         // Retry get_ws_url with backoff instead of fixed sleep
-        let ws_url =
-            Self::get_ws_url_with_retry(discovered_port, 10, Duration::from_millis(500)).await?;
+        let ws_url_result =
+            Self::get_ws_url_with_retry(discovered_port, 10, Duration::from_millis(500)).await;
+
+        // Enhanced error handling with helpful messages
+        let ws_url = match ws_url_result {
+            Ok(url) => url,
+            Err(e) => {
+                // Check if Chrome process is still running
+                let status = process.try_wait();
+                match status {
+                    Ok(Some(exit_status)) => {
+                        return Err(ArxivError::Cdp(format!(
+                            "Chrome process exited early with status: {}",
+                            exit_status
+                        )));
+                    }
+                    Ok(None) => {
+                        // Process is still running but we couldn't connect
+                        return Err(ArxivError::Cdp(format!(
+                            "Chrome process is still running but debugging port was not found after 30 seconds.\n\n\
+                             Troubleshooting:\n\
+                             - If running in CI, ensure Chrome/Chromium is installed and accessible\n\
+                             - Check if Chrome requires additional flags (e.g., --no-sandbox for Linux CI)\n\
+                             - Verify the temp directory is writable\n\
+                             - Try using 'config --set-browser' to specify the correct Chrome path\n\n\
+                             Original error: {}",
+                            e
+                        )));
+                    }
+                    Err(err) => {
+                        return Err(ArxivError::Cdp(format!(
+                            "Failed to check Chrome process status: {}\n\nOriginal error: {}",
+                            err, e
+                        )));
+                    }
+                }
+            }
+        };
 
         Ok(Self { process: Some(process), port: discovered_port, ws_url })
     }
@@ -206,7 +235,7 @@ pub struct BrowserState {
 
 #[derive(Clone)]
 pub struct BrowserManager {
-    config: crate::core::Config,
+    pub config: crate::core::Config,
     state: Arc<Mutex<BrowserState>>,
 }
 
