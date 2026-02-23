@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "arxiv-cli")]
 #[command(about = "Search and fetch papers from Arxiv", long_about = None)]
+#[command(version)]
 pub struct Cli {
     /// Show browser window (disable headless mode)
     #[arg(long)]
