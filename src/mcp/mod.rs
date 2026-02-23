@@ -17,6 +17,9 @@ pub struct SearchPapersRequest {
     #[schemars(description = "The search query (e.g., 'quantum computing')")]
     pub query: String,
 
+    #[schemars(description = "Output file path to write results (JSON format)")]
+    pub output_path: String,
+
     #[schemars(description = "Maximum number of results to return")]
     #[serde(default)]
     pub limit: Option<usize>,
@@ -28,10 +31,6 @@ pub struct SearchPapersRequest {
     #[schemars(description = "Filter by date (submitted after), format: YYYY-MM-DD")]
     #[serde(default)]
     pub after: Option<String>,
-
-    #[schemars(description = "Output file path to write results (JSON format)")]
-    #[serde(default)]
-    pub output_path: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -39,15 +38,14 @@ pub struct FetchPaperRequest {
     #[schemars(description = "The arXiv ID of the paper (e.g., '2512.04518')")]
     pub id: String,
 
+    #[schemars(description = "Output file path to write results (JSON format)")]
+    pub output_path: String,
+
     #[schemars(
         description = "If true, downloads the raw PDF to a local temporary file and returns its path"
     )]
     #[serde(default)]
     pub raw: Option<bool>,
-
-    #[schemars(description = "Output file path to write results (JSON format)")]
-    #[serde(default)]
-    pub output_path: Option<String>,
 }
 
 pub struct ArxivHandler {
@@ -73,15 +71,13 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to search arXiv: {}", e), None)
             })?;
 
-        // Write to file if output_path is specified
-        if let Some(path) = &output_path {
-            let json = serde_json::to_string_pretty(&papers).map_err(|e| {
-                ErrorData::internal_error(format!("Failed to serialize papers: {}", e), None)
-            })?;
-            tokio::fs::write(path, json).await.map_err(|e| {
-                ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
-            })?;
-        }
+        // Write to file
+        let json = serde_json::to_string_pretty(&papers).map_err(|e| {
+            ErrorData::internal_error(format!("Failed to serialize papers: {}", e), None)
+        })?;
+        tokio::fs::write(&output_path, json).await.map_err(|e| {
+            ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+        })?;
 
         // Return summary
         if papers.is_empty() {
@@ -110,19 +106,17 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to save PDF: {}", e), None)
             })?;
 
-            // Write metadata to output_path if specified
-            if let Some(path) = &output_path {
-                let result = serde_json::json!({
-                    "id": id,
-                    "pdf_path": temp_path.display().to_string(),
-                });
-                let json = serde_json::to_string_pretty(&result).map_err(|e| {
-                    ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
-                })?;
-                tokio::fs::write(path, json).await.map_err(|e| {
-                    ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
-                })?;
-            }
+            // Write metadata to output_path
+            let result = serde_json::json!({
+                "id": id,
+                "pdf_path": temp_path.display().to_string(),
+            });
+            let json = serde_json::to_string_pretty(&result).map_err(|e| {
+                ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
+            })?;
+            tokio::fs::write(&output_path, json).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+            })?;
 
             Ok(format!("Successfully downloaded PDF to: {}", temp_path.display()))
         } else {
@@ -130,15 +124,13 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
             })?;
 
-            // Write to file if output_path is specified
-            if let Some(path) = &output_path {
-                let json = serde_json::to_string_pretty(&paper).map_err(|e| {
-                    ErrorData::internal_error(format!("Failed to serialize paper: {}", e), None)
-                })?;
-                tokio::fs::write(path, json).await.map_err(|e| {
-                    ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
-                })?;
-            }
+            // Write to file
+            let json = serde_json::to_string_pretty(&paper).map_err(|e| {
+                ErrorData::internal_error(format!("Failed to serialize paper: {}", e), None)
+            })?;
+            tokio::fs::write(&output_path, json).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+            })?;
 
             // Return summary
             Ok(format!("Fetched paper: {} ({} authors)", paper.title, paper.authors.len()))
