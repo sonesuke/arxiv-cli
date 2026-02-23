@@ -17,6 +17,9 @@ pub struct SearchPapersRequest {
     #[schemars(description = "The search query (e.g., 'quantum computing')")]
     pub query: String,
 
+    #[schemars(description = "Output file path to write results (JSON format)")]
+    pub output_path: String,
+
     #[schemars(description = "Maximum number of results to return")]
     #[serde(default)]
     pub limit: Option<usize>,
@@ -34,6 +37,9 @@ pub struct SearchPapersRequest {
 pub struct FetchPaperRequest {
     #[schemars(description = "The arXiv ID of the paper (e.g., '2512.04518')")]
     pub id: String,
+
+    #[schemars(description = "Output file path to write results (JSON format)")]
+    pub output_path: String,
 
     #[schemars(
         description = "If true, downloads the raw PDF to a local temporary file and returns its path"
@@ -58,16 +64,28 @@ impl ArxivHandler {
         &self,
         Parameters(request): Parameters<SearchPapersRequest>,
     ) -> Result<String, ErrorData> {
-        let SearchPapersRequest { query, limit, before, after } = request;
+        let SearchPapersRequest { query, limit, before, after, output_path } = request;
 
-        self.client
-            .search(&query, limit, after, before, false)
-            .await
-            .map(|papers| {
-                serde_json::to_string_pretty(&papers)
-                    .unwrap_or_else(|_| "Failed to serialize papers".to_string())
-            })
-            .map_err(|e| ErrorData::internal_error(format!("Failed to search arXiv: {}", e), None))
+        let papers =
+            self.client.search(&query, limit, after, before, false).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to search arXiv: {}", e), None)
+            })?;
+
+        // Write to file
+        let json = serde_json::to_string_pretty(&papers).map_err(|e| {
+            ErrorData::internal_error(format!("Failed to serialize papers: {}", e), None)
+        })?;
+        tokio::fs::write(&output_path, json).await.map_err(|e| {
+            ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+        })?;
+
+        // Return summary
+        if papers.is_empty() {
+            Ok("No papers found".to_string())
+        } else {
+            let titles: Vec<String> = papers.iter().map(|p| p.title.clone()).collect();
+            Ok(format!("Found {} papers:\n{}", papers.len(), titles.join("\n")))
+        }
     }
 
     #[tool(description = "Fetch details of a specific paper by ID")]
@@ -75,7 +93,7 @@ impl ArxivHandler {
         &self,
         Parameters(request): Parameters<FetchPaperRequest>,
     ) -> Result<String, ErrorData> {
-        let FetchPaperRequest { id, raw } = request;
+        let FetchPaperRequest { id, raw, output_path } = request;
         let raw = raw.unwrap_or(false);
 
         if raw {
@@ -87,18 +105,35 @@ impl ArxivHandler {
             tokio::fs::write(&temp_path, bytes).await.map_err(|e| {
                 ErrorData::internal_error(format!("Failed to save PDF: {}", e), None)
             })?;
+
+            // Write metadata to output_path
+            let result = serde_json::json!({
+                "id": id,
+                "pdf_path": temp_path.display().to_string(),
+            });
+            let json = serde_json::to_string_pretty(&result).map_err(|e| {
+                ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
+            })?;
+            tokio::fs::write(&output_path, json).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+            })?;
+
             Ok(format!("Successfully downloaded PDF to: {}", temp_path.display()))
         } else {
-            self.client
-                .fetch(&id)
-                .await
-                .map(|paper| {
-                    serde_json::to_string_pretty(&paper)
-                        .unwrap_or_else(|_| "Failed to serialize paper".to_string())
-                })
-                .map_err(|e| {
-                    ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
-                })
+            let paper = self.client.fetch(&id).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
+            })?;
+
+            // Write to file
+            let json = serde_json::to_string_pretty(&paper).map_err(|e| {
+                ErrorData::internal_error(format!("Failed to serialize paper: {}", e), None)
+            })?;
+            tokio::fs::write(&output_path, json).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
+            })?;
+
+            // Return summary
+            Ok(format!("Fetched paper: {} ({} authors)", paper.title, paper.authors.len()))
         }
     }
 }
