@@ -60,11 +60,14 @@ impl ArxivHandler {
     ) -> Result<String, ErrorData> {
         let SearchPapersRequest { query, limit, before, after } = request;
 
-        match self.client.search(&query, limit, after, before, false).await {
-            Ok(papers) => Ok(serde_json::to_string_pretty(&papers)
-                .unwrap_or_else(|_| "Failed to serialize papers".to_string())),
-            Err(e) => Ok(format!("Search failed: {}", e)),
-        }
+        self.client
+            .search(&query, limit, after, before, false)
+            .await
+            .map(|papers| {
+                serde_json::to_string_pretty(&papers)
+                    .unwrap_or_else(|_| "Failed to serialize papers".to_string())
+            })
+            .map_err(|e| ErrorData::internal_error(format!("Failed to search arXiv: {}", e), None))
     }
 
     #[tool(description = "Fetch details of a specific paper by ID")]
@@ -76,25 +79,26 @@ impl ArxivHandler {
         let raw = raw.unwrap_or(false);
 
         if raw {
-            match self.client.fetch_pdf(&id).await {
-                Ok(bytes) => {
-                    let mut temp_path = std::env::temp_dir();
-                    temp_path.push(format!("arxiv_{}.pdf", id.replace('/', "_")));
-                    match tokio::fs::write(&temp_path, bytes).await {
-                        Ok(_) => {
-                            Ok(format!("Successfully downloaded PDF to: {}", temp_path.display()))
-                        }
-                        Err(e) => Ok(format!("Failed to save PDF to disk: {}", e)),
-                    }
-                }
-                Err(e) => Ok(format!("Failed to fetch PDF: {}", e)),
-            }
+            let bytes = self.client.fetch_pdf(&id).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to fetch PDF: {}", e), None)
+            })?;
+            let mut temp_path = std::env::temp_dir();
+            temp_path.push(format!("arxiv_{}.pdf", id.replace('/', "_")));
+            tokio::fs::write(&temp_path, bytes).await.map_err(|e| {
+                ErrorData::internal_error(format!("Failed to save PDF: {}", e), None)
+            })?;
+            Ok(format!("Successfully downloaded PDF to: {}", temp_path.display()))
         } else {
-            match self.client.fetch(&id).await {
-                Ok(paper) => Ok(serde_json::to_string_pretty(&paper)
-                    .unwrap_or_else(|_| "Failed to serialize paper".to_string())),
-                Err(e) => Ok(format!("Fetch failed: {}", e)),
-            }
+            self.client
+                .fetch(&id)
+                .await
+                .map(|paper| {
+                    serde_json::to_string_pretty(&paper)
+                        .unwrap_or_else(|_| "Failed to serialize paper".to_string())
+                })
+                .map_err(|e| {
+                    ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
+                })
         }
     }
 }
