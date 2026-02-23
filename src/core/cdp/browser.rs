@@ -266,9 +266,21 @@ impl BrowserManager {
             return Ok(Arc::clone(browser));
         }
 
-        let args = vec![
+        // Build Chrome args from config
+        let mut args = vec![
             "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         ];
+
+        // Add custom Chrome args from config
+        args.extend(self.config.chrome_args.iter().map(|s| s.as_str()));
+
+        // In CI environments, automatically add sandbox-disabling flags
+        if std::env::var("CI").is_ok() {
+            args.push("--disable-gpu");
+            args.push("--no-sandbox");
+            args.push("--disable-setuid-sandbox");
+        }
+
         let browser_path = self.config.browser_path.as_ref().map(PathBuf::from);
 
         let browser =

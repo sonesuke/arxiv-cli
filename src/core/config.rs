@@ -10,6 +10,8 @@ pub struct Config {
     pub headless: bool,
     #[serde(default)]
     pub browser_path: Option<String>,
+    #[serde(default)]
+    pub chrome_args: Vec<String>,
 }
 
 fn default_headless() -> bool {
@@ -18,7 +20,7 @@ fn default_headless() -> bool {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { headless: true, browser_path: None }
+        Self { headless: true, browser_path: None, chrome_args: Vec::new() }
     }
 }
 
@@ -107,6 +109,7 @@ mod tests {
         let config = Config::default();
         assert!(config.headless);
         assert!(config.browser_path.is_none());
+        assert!(config.chrome_args.is_empty());
     }
 
     #[test]
@@ -185,7 +188,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
 
-        let config = Config { headless: false, browser_path: Some("/custom/path".to_string()) };
+        let config = Config {
+            headless: false,
+            browser_path: Some("/custom/path".to_string()),
+            chrome_args: vec!["--no-sandbox".to_string(), "--disable-gpu".to_string()],
+        };
         config.save_to(&path).unwrap();
 
         let loaded = Config::load_from(&path).unwrap();
