@@ -136,6 +136,25 @@ arxiv-cli config get headless
 arxiv-cli config path
 ```
 
+### Chrome Arguments
+For Docker/devcontainer environments, you may need to pass additional Chrome flags:
+
+```json
+{
+  "browser_path": "/usr/bin/google-chrome",
+  "chrome_args": [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-gpu"
+  ]
+}
+```
+
+**Note**: When the `CI` environment variable is set, the following flags are automatically added:
+- `--disable-gpu`
+- `--no-sandbox`
+- `--disable-setuid-sandbox`
+
 ## Implementation Details
 - **Stack**: Rust, Clap, Custom CDP Client (`tokio-tungstenite`), Serde, Reqwest, PDF-Extract, `mcp-sdk-rs`.
 - **Search Scraping**: Uses a custom Chrome DevTools Protocol (CDP) client to handle dynamic search result loaded via JS.
