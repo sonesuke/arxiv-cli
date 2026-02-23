@@ -23,29 +23,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Check Chrome installation
-        run: |
-          echo "=== Checking Chrome installation ==="
-          which google-chrome || echo "google-chrome not found"
-          which chrome || echo "chrome not found"
-          which chromium || echo "chromium not found"
-          which chromium-browser || echo "chromium-browser not found"
-          ls -la /usr/bin/ | grep -i chrome || echo "No chrome in /usr/bin"
-          echo "===================================="
-
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
-
-      - name: Verify Chrome installation
-        run: |
-          echo "=== After Chrome setup ==="
-          which google-chrome || echo "google-chrome not found"
-          which chrome || echo "chrome not found"
-          google-chrome --version || echo "Failed to get version"
-          echo "=========================="
-
       - name: Check formatting
         run: cargo fmt -- --check
 
