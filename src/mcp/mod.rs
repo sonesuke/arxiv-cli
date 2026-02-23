@@ -79,13 +79,46 @@ impl ArxivHandler {
             ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
         })?;
 
-        // Return summary
-        if papers.is_empty() {
-            Ok("No papers found".to_string())
-        } else {
-            let titles: Vec<String> = papers.iter().map(|p| p.title.clone()).collect();
-            Ok(format!("Found {} papers:\n{}", papers.len(), titles.join("\n")))
-        }
+        // Return file path and schema
+        let schema = serde_json::json!({
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "authors": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "published_date": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "url": {"type": "string"},
+                    "pdf_url": {"type": "string"},
+                    "description_paragraphs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "number": {"type": "string"},
+                                "id": {"type": "string"},
+                                "text": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        let result = serde_json::json!({
+            "output_path": output_path,
+            "count": papers.len(),
+            "schema": schema
+        });
+
+        serde_json::to_string_pretty(&result).map_err(|e| {
+            ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
+        })
     }
 
     #[tool(description = "Fetch details of a specific paper by ID")]
@@ -96,7 +129,8 @@ impl ArxivHandler {
         let FetchPaperRequest { id, raw, output_path } = request;
         let raw = raw.unwrap_or(false);
 
-        if raw {
+        let schema = if raw {
+            // raw=true: output contains {id, pdf_path}
             let bytes = self.client.fetch_pdf(&id).await.map_err(|e| {
                 ErrorData::internal_error(format!("Failed to fetch PDF: {}", e), None)
             })?;
@@ -118,8 +152,15 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
             })?;
 
-            Ok(format!("Successfully downloaded PDF to: {}", temp_path.display()))
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "pdf_path": {"type": "string"}
+                }
+            })
         } else {
+            // raw=false: output contains full paper details
             let paper = self.client.fetch(&id).await.map_err(|e| {
                 ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
             })?;
@@ -132,9 +173,43 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to write to file: {}", e), None)
             })?;
 
-            // Return summary
-            Ok(format!("Fetched paper: {} ({} authors)", paper.title, paper.authors.len()))
-        }
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "title": {"type": "string"},
+                    "authors": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "published_date": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "url": {"type": "string"},
+                    "pdf_url": {"type": "string"},
+                    "description_paragraphs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "number": {"type": "string"},
+                                "id": {"type": "string"},
+                                "text": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            })
+        };
+
+        // Return file path and schema
+        let result = serde_json::json!({
+            "output_path": output_path,
+            "schema": schema
+        });
+
+        serde_json::to_string_pretty(&result).map_err(|e| {
+            ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
+        })
     }
 }
 
