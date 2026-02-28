@@ -2,3 +2,5 @@
 # PR-Healer runtime artifacts
 agents/pr-healer/healer.log
 agents/pr-healer/progress.jsonl
+# Claude worktrees
+.claude/worktrees/
