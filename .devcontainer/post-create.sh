@@ -30,6 +30,13 @@ EOF
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.bashrc
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.zshrc
 
+    # Install mise as vscode user
+    if ! command -v mise >/dev/null 2>&1; then
+        echo "[Devcontainer Setup] Installing mise..."
+        curl https://mise.run | sh
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+
     echo "[Devcontainer Setup] Configuring mise..."
     echo 'eval "$(mise activate bash)"' >> $HOME/.bashrc
     echo 'eval "$(mise activate zsh)"' >> $HOME/.zshrc
@@ -39,15 +46,42 @@ EOF
         echo "[Devcontainer Setup] Installing tools with mise..."
         mise trust
         mise install
+
+        echo "[Devcontainer Setup] Setting up git pre-commit hook..."
+        mise generate git-pre-commit --write --task=pre-commit
     else
         echo "[Devcontainer Setup] WARNING: mise is not installed."
     fi
 
     echo "[Devcontainer Setup] Authenticating claude..."
     if [ -n "$Z_AI_API_KEY" ]; then
-        npx -y @z_ai/coding-helper auth glm_coding_plan_global "$Z_AI_API_KEY"
-        npx -y @z_ai/coding-helper auth reload claude
+        mkdir -p "$HOME/.claude"
+        cat > "$HOME/.claude/settings.json" <<EOF
+{
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "$Z_AI_API_KEY",
+        "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+        "API_TIMEOUT_MS": "3000000",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air"
+    }
+}
+EOF
     fi
+
+    # Set up chromium symlink and arxiv-cli config for tests
+    echo "[Devcontainer Setup] Setting up chromium and arxiv-cli config..."
+    sudo ln -sf /usr/bin/chromium /usr/bin/chromium-browser
+    mkdir -p "$HOME/.config/arxiv-cli"
+    cat > "$HOME/.config/arxiv-cli/config.json" <<'EOF'
+{
+  "headless": true,
+  "browser_path": "/usr/bin/chromium-browser",
+  "chrome_args": ["--no-sandbox", "--disable-gpu"]
+}
+EOF
 
     echo "[Devcontainer Setup] Complete!"
 else
