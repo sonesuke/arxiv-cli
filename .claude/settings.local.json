@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git tag:*)",
+      "Bash(git fetch:*)",
+      "Bash(git push:*)",
+      "Bash(mise run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git pull:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo search:*)",
+      "WebSearch",
+      "Bash(cargo info:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo run:*)",
+      "Bash(cargo test:*)",
+      "Bash(curl:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh release create:*)",
+      "Bash(git stash:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(grep:*)",
+      "Bash(gh pr close:*)",
+      "Bash(cargo check:*)",
+      "Bash(git cherry-pick:*)"
+    ]
+  }
+}
