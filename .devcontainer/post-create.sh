@@ -71,13 +71,12 @@ EOF
 EOF
     fi
 
-    # Set up chromium symlink and arxiv-cli config for tests
-    echo "[Devcontainer Setup] Setting up chromium and arxiv-cli config..."
-    sudo ln -sf /usr/bin/chromium /usr/bin/chromium-browser
+    # Set up arxiv-cli config for tests
+    echo "[Devcontainer Setup] Setting up arxiv-cli config..."
     mkdir -p "$HOME/.config/arxiv-cli"
     cat > "$HOME/.config/arxiv-cli/config.toml" <<'EOF'
 headless = true
-browser_path = "/usr/bin/chromium-browser"
+browser_path = "/usr/bin/chromium"
 chrome_args = ["--no-sandbox", "--disable-gpu"]
 EOF
 
