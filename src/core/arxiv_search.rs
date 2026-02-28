@@ -1,7 +1,7 @@
-use super::cdp::{BrowserManager, CdpPage};
 use super::config::Config;
 use super::error::{ArxivError, Result};
 use super::models::{Paper, Paragraph};
+use chrome_cdp::{BrowserManager, CdpPage};
 
 pub struct ArxivClient {
     browser_manager: BrowserManager,
@@ -9,7 +9,13 @@ pub struct ArxivClient {
 
 impl ArxivClient {
     pub async fn new(config: &Config) -> Result<Self> {
-        Ok(Self { browser_manager: BrowserManager::new(config.clone()) })
+        let browser_manager = BrowserManager::new(
+            config.browser_path.as_deref().map(std::path::PathBuf::from),
+            config.headless,
+            false, // debug mode
+            config.chrome_args.clone(),
+        );
+        Ok(Self { browser_manager })
     }
 
     pub async fn search(
@@ -42,7 +48,7 @@ impl ArxivClient {
                 eprintln!("[VERBOSE] Created new page: {}", ws_url);
             }
 
-            let tab = CdpPage::new_with_verbose(&ws_url, verbose).await?;
+            let tab = CdpPage::new(&ws_url).await?;
 
             let url = Self::build_search_url(query, start, &after, &before);
 
