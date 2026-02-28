@@ -116,3 +116,81 @@ fn test_mcp_list_tools() {
     // Graceful cleanup to flush coverage data
     graceful_shutdown(stdin, child);
 }
+
+#[test]
+fn test_mcp_cypher_query() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_arxiv-cli"))
+        .arg("mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("Failed to spawn arxiv-cli mcp");
+
+    let mut stdin = child.stdin.take().expect("Failed to open stdin");
+    let stdout = child.stdout.take().expect("Failed to open stdout");
+    let mut reader = BufReader::new(stdout);
+
+    // 1. Initialize
+    let init_request = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": { "name": "test", "version": "1.0" }
+        }
+    });
+    writeln!(stdin, "{}", init_request).unwrap();
+    let mut response = String::new();
+    reader.read_line(&mut response).unwrap();
+    assert!(response.contains("tools"), "Init response failed: {}", response);
+
+    // 2. Initialized notification
+    let initialized_notification = json!({
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+    });
+    writeln!(stdin, "{}", initialized_notification).unwrap();
+
+    // 3. List tools to verify execute_cypher is available
+    let list_request = json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+    });
+    writeln!(stdin, "{}", list_request).unwrap();
+    response.clear();
+    reader.read_line(&mut response).unwrap();
+    assert!(
+        response.contains("execute_cypher"),
+        "execute_cypher tool not found in list: {}",
+        response
+    );
+
+    // 4. Call execute_cypher without search results - should fail
+    let execute_cypher_request = json!({
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+            "name": "execute_cypher",
+            "arguments": {
+                "query": "MATCH (p) RETURN p.title LIMIT 1"
+            }
+        }
+    });
+    writeln!(stdin, "{}", execute_cypher_request).unwrap();
+    response.clear();
+    reader.read_line(&mut response).unwrap();
+    assert!(
+        response.contains("No search results loaded"),
+        "Expected error for execute_cypher without results: {}",
+        response
+    );
+
+    // Graceful cleanup to flush coverage data
+    graceful_shutdown(stdin, child);
+}

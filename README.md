@@ -11,6 +11,7 @@ An AI-ready search and fetch tool for arXiv papers, designed for both humans and
 - **Raw PDF download** with `--raw` flag.
 - **Headless mode** by default; use `--head` to show the browser.
 - **Model Context Protocol (MCP)** support to integrate with AI agents.
+- **Cypher query support**: Query search results with Cypher (graph query language).
 - **Robust formatting**: Uses structured JSON for easy machine consumption.
 
 ## Installation
@@ -40,15 +41,63 @@ cargo install --path .
 
 ### Available Tools
 
-| Tool Name | Description | Parameters |
-|---|---|---|
-| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` |
-| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `paper_id` (required, e.g., "2512.04518") |
+| Tool Name | Description | Parameters | Response |
+|---|---|---|---|
+| `search_papers` | Search arXiv for papers matching a free-text query. | `query`, `output_path` (required), `limit`, `before`, `after` | `{ output_path, count, graph_schema }` |
+| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `id`, `output_path` (required), `raw` (optional) | `{ output_path, graph_schema }` |
+| `execute_cypher` | Execute a Cypher query against the loaded search/fetch results. | `query` (required) | Query results as JSON array |
 
 ### Usage
 To start the MCP server over `stdio`:
 ```bash
 arxiv-cli mcp
+```
+
+### Cypher Query Support
+
+After calling `search_papers` or `fetch_paper`, the results are loaded into an in-memory graph engine. You can then query the results using **Cypher** (the graph query language from Neo4j).
+
+#### Workflow
+
+```javascript
+// 1. Search papers (results are automatically loaded into the graph engine)
+search_papers({ query: "LLM", output_path: "/tmp/papers.json", limit: 10 })
+// Returns: { output_path, count, graph_schema }
+
+// 2. Query the results using Cypher
+execute_cypher({ query: "MATCH (p) RETURN p.title, p.authors LIMIT 5" })
+// Returns: [{ "p.title": "...", "p.authors": ["..."] }, ...]
+```
+
+#### Example Queries
+
+```cypher
+-- Get all paper titles
+MATCH (p) RETURN p.title
+
+-- Count papers by author
+MATCH (p) RETURN p.authors, COUNT(*)
+
+-- Filter papers with specific keywords in title
+MATCH (p) WHERE p.title CONTAINS "GPT" RETURN p.title, p.published_date
+
+-- Get papers with their summary
+MATCH (p) RETURN p.title, p.summary LIMIT 3
+```
+
+#### Graph Schema
+
+The `graph_schema` in the response shows you the available node types and properties:
+
+```
+Graph Schema
+============
+
+Node Types:
+  (:Paper N nodes)
+
+Properties:
+  :Paper {id: STRING, title: STRING, authors: ARRAY, published_date: STRING, summary: STRING, url: STRING, pdf_url: STRING, description_paragraphs: ARRAY}
 ```
 
 ### Configuration for Claude Desktop
