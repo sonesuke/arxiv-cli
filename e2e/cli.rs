@@ -38,7 +38,7 @@ fn test_config_path() {
         .args(["config", "path"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("config.json"));
+        .stdout(predicate::str::contains("config.toml"));
 }
 
 #[test]

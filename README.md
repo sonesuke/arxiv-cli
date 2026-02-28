@@ -114,9 +114,9 @@ arxiv-cli search --query "AI" --head
 ## Configuration
 This tool relies on a compatible Chrome/Chromium installation for scraping.
 Config file location:
-- macOS: `~/Library/Application Support/com.sonesuke.arxiv-cli/config.json`
-- Linux: `~/.config/arxiv-cli/config.json`
-- Windows: `C:\Users\{User}\AppData\Roaming\sonesuke\arxiv-cli\config\config.json`
+- macOS: `~/Library/Application Support/com.sonesuke.arxiv-cli/config.toml`
+- Linux: `~/.config/arxiv-cli/config.toml`
+- Windows: `C:\Users\{User}\AppData\Roaming\sonesuke\arxiv-cli\config\config.toml`
 
 ### Manage Configuration
 You can manage the configuration via CLI:
@@ -139,15 +139,13 @@ arxiv-cli config path
 ### Chrome Arguments
 For Docker/devcontainer environments, you may need to pass additional Chrome flags:
 
-```json
-{
-  "browser_path": "/usr/bin/google-chrome",
-  "chrome_args": [
+```toml
+browser_path = "/usr/bin/google-chrome"
+chrome_args = [
     "--no-sandbox",
     "--disable-setuid-sandbox",
     "--disable-gpu"
-  ]
-}
+]
 ```
 
 **Note**: When the `CI` environment variable is set, the following flags are automatically added:

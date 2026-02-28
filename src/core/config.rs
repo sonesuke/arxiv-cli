@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+const CONFIG_FILE: &str = "config.toml";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Config {
     #[serde(default = "default_headless")]
@@ -39,7 +41,7 @@ impl Config {
             ArxivError::Config(format!("Failed to read config file at {:?}: {}", path, e))
         })?;
 
-        let config: Config = serde_json::from_str(&content)
+        let config: Config = toml::from_str(&content)
             .map_err(|e| ArxivError::Config(format!("Failed to parse config file: {}", e)))?;
 
         Ok(config)
@@ -60,7 +62,8 @@ impl Config {
             })?;
         }
 
-        let content = serde_json::to_string_pretty(self)?;
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| ArxivError::Config(format!("Failed to serialize config: {}", e)))?;
         fs::write(path, content).map_err(|e| {
             ArxivError::Config(format!("Failed to write config file at {:?}: {}", path, e))
         })?;
@@ -72,7 +75,7 @@ impl Config {
         let project_dirs = ProjectDirs::from("com", "sonesuke", "arxiv-cli").ok_or_else(|| {
             ArxivError::Config("Could not determine config directory".to_string())
         })?;
-        Ok(project_dirs.config_dir().join("config.json"))
+        Ok(project_dirs.config_dir().join(CONFIG_FILE))
     }
 
     pub fn set(&mut self, key: &str, value: &str) -> Result<()> {
@@ -138,22 +141,22 @@ mod tests {
     #[test]
     fn test_config_path_returns_valid_path() {
         let path = Config::config_path().unwrap();
-        assert!(path.to_str().unwrap().contains("config.json"));
+        assert!(path.to_str().unwrap().contains(CONFIG_FILE));
     }
 
     #[test]
     fn test_load_from_nonexistent_file() {
-        let path = PathBuf::from("/tmp/arxiv_cli_test_nonexistent_config.json");
+        let path = PathBuf::from("/tmp/arxiv_cli_test_nonexistent_config.toml");
         let config = Config::load_from(&path).unwrap();
         assert_eq!(config, Config::default());
     }
 
     #[test]
-    fn test_load_from_valid_json() {
+    fn test_load_from_valid_toml() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.json");
+        let path = dir.path().join("config.toml");
         let mut file = std::fs::File::create(&path).unwrap();
-        writeln!(file, "{{\"headless\": false, \"browser_path\": \"/usr/bin/chrome\"}}").unwrap();
+        writeln!(file, "headless = false\nbrowser_path = \"/usr/bin/chrome\"").unwrap();
 
         let config = Config::load_from(&path).unwrap();
         assert!(!config.headless);
@@ -161,23 +164,11 @@ mod tests {
     }
 
     #[test]
-    fn test_load_from_valid_json_legacy() {
+    fn test_load_from_invalid_toml() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.json");
+        let path = dir.path().join("config.toml");
         let mut file = std::fs::File::create(&path).unwrap();
-        writeln!(file, "{{\"headless\": false, \"browser_path\": \"/usr/bin/chrome\"}}").unwrap();
-
-        let config = Config::load_from(&path).unwrap();
-        assert!(!config.headless);
-        assert_eq!(config.browser_path, Some("/usr/bin/chrome".to_string()));
-    }
-
-    #[test]
-    fn test_load_from_invalid_json() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.json");
-        let mut file = std::fs::File::create(&path).unwrap();
-        writeln!(file, "invalid json").unwrap();
+        writeln!(file, "invalid toml").unwrap();
 
         let result = Config::load_from(&path);
         assert!(result.is_err());
@@ -186,7 +177,7 @@ mod tests {
     #[test]
     fn test_save_to_and_load_from_roundtrip() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.json");
+        let path = dir.path().join("config.toml");
 
         let config = Config {
             headless: false,
@@ -202,7 +193,7 @@ mod tests {
     #[test]
     fn test_save_to_creates_parent_dirs() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("nested").join("dir").join("config.json");
+        let path = dir.path().join("nested").join("dir").join("config.toml");
 
         let config = Config::default();
         config.save_to(&path).unwrap();
