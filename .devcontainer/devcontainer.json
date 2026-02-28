@@ -1,5 +1,5 @@
 {
-	"name": "Arxiv-CLI Dev",
+	"name": "Chrome-CDP Dev",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": ".."
@@ -12,6 +12,7 @@
 			"userGid": "1000",
 			"upgradePackages": "false"
 		},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/git:1": {}
 	},
 	"customizations": {
