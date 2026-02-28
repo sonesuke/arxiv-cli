@@ -75,12 +75,10 @@ EOF
     echo "[Devcontainer Setup] Setting up chromium and arxiv-cli config..."
     sudo ln -sf /usr/bin/chromium /usr/bin/chromium-browser
     mkdir -p "$HOME/.config/arxiv-cli"
-    cat > "$HOME/.config/arxiv-cli/config.json" <<'EOF'
-{
-  "headless": true,
-  "browser_path": "/usr/bin/chromium-browser",
-  "chrome_args": ["--no-sandbox", "--disable-gpu"]
-}
+    cat > "$HOME/.config/arxiv-cli/config.toml" <<'EOF'
+headless = true
+browser_path = "/usr/bin/chromium-browser"
+chrome_args = ["--no-sandbox", "--disable-gpu"]
 EOF
 
     echo "[Devcontainer Setup] Complete!"
