@@ -170,7 +170,7 @@ fn test_mcp_cypher_query() {
         response
     );
 
-    // 4. Call execute_cypher without search results - should fail
+    // 4. Call execute_cypher without dataset - should fail
     let execute_cypher_request = json!({
         "jsonrpc": "2.0",
         "id": 3,
@@ -178,6 +178,7 @@ fn test_mcp_cypher_query() {
         "params": {
             "name": "execute_cypher",
             "arguments": {
+                "dataset": "nonexistent",
                 "query": "MATCH (p) RETURN p.title LIMIT 1"
             }
         }
@@ -186,8 +187,8 @@ fn test_mcp_cypher_query() {
     response.clear();
     reader.read_line(&mut response).unwrap();
     assert!(
-        response.contains("No search results loaded"),
-        "Expected error for execute_cypher without results: {}",
+        response.contains("not found"),
+        "Expected error for execute_cypher with nonexistent dataset: {}",
         response
     );
 

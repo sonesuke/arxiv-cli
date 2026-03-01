@@ -43,9 +43,9 @@ cargo install --path .
 
 | Tool Name | Description | Parameters | Response |
 |---|---|---|---|
-| `search_papers` | Search arXiv for papers matching a free-text query. | `query`, `output_path` (required), `limit`, `before`, `after` | `{ output_path, count, graph_schema }` |
-| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `id`, `output_path` (required), `raw` (optional) | `{ output_path, graph_schema }` |
-| `execute_cypher` | Execute a Cypher query against the loaded search/fetch results. | `query` (required) | Query results as JSON array |
+| `search_papers` | Search arXiv for papers matching a free-text query. | `query` (required), `limit`, `before`, `after` | `{ dataset, count, graph_schema }` |
+| `fetch_paper` | Fetch details (metadata & PDF text) of a specific paper. | `id` (required), `raw` (optional) | `{ dataset, graph_schema }` |
+| `execute_cypher` | Execute a Cypher query against a loaded dataset. | `dataset`, `query` (required) | Query results as JSON array |
 
 ### Usage
 To start the MCP server over `stdio`:
@@ -55,18 +55,31 @@ arxiv-cli mcp
 
 ### Cypher Query Support
 
-After calling `search_papers` or `fetch_paper`, the results are loaded into an in-memory graph engine. You can then query the results using **Cypher** (the graph query language from Neo4j).
+After calling `search_papers` or `fetch_paper`, the results are loaded into an in-memory graph engine. The dataset name is automatically generated from the query parameters (e.g., `search_a1b2c3d4`, `fetch_e5f6g7h8`). You can then query the results using **Cypher** (the graph query language from Neo4j).
+
+#### Caching
+
+Results are cached automatically (up to 100 recent queries). If you call `search_papers` or `fetch_paper` with the same parameters, the cached dataset is returned immediately without fetching from arXiv.
 
 #### Workflow
 
 ```javascript
-// 1. Search papers (results are automatically loaded into the graph engine)
-search_papers({ query: "LLM", output_path: "/tmp/papers.json", limit: 10 })
-// Returns: { output_path, count, graph_schema }
+// 1. Search papers (dataset name is auto-generated, e.g., "search_a1b2c3d4")
+search_papers({ query: "LLM", limit: 10 })
+// Returns: { dataset: "search_a1b2c3d4", count: 10, graph_schema: "..." }
 
-// 2. Query the results using Cypher
-execute_cypher({ query: "MATCH (p) RETURN p.title, p.authors LIMIT 5" })
+// 2. Query the dataset using Cypher
+execute_cypher({ dataset: "search_a1b2c3d4", query: "MATCH (p) RETURN p.title, p.authors LIMIT 5" })
 // Returns: [{ "p.title": "...", "p.authors": ["..."] }, ...]
+
+// 3. Same query returns cached results (instant response)
+search_papers({ query: "LLM", limit: 10 })
+// Returns: { dataset: "search_a1b2c3d4", count: "cached", graph_schema: "..." }
+
+// You can have multiple datasets
+fetch_paper({ id: "2512.04518" })
+// Returns: { dataset: "fetch_e5f6g7h8", graph_schema: "..." }
+execute_cypher({ dataset: "fetch_e5f6g7h8", query: "MATCH (p) RETURN p.title" })
 ```
 
 #### Example Queries
