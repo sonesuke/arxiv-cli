@@ -21,7 +21,7 @@ uuid = { version = "1.11.0", features = ["v4"] }
 directories = "6.0.0"
 chrome-cdp = { git = "https://github.com/sonesuke/chrome-cdp", branch = "main" }
 cypher-rs = { git = "https://github.com/sonesuke/cypher-rs", branch = "main" }
-lru = "0.12"
+lru = "0.16"
 # MCP SDK
 rmcp = { version = "0.16", features = ["server", "macros", "transport-io"] }
 schemars = "1.2"
