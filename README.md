@@ -12,6 +12,7 @@ An AI-ready search and fetch tool for arXiv papers, designed for both humans and
 - **Headless mode** by default; use `--head` to show the browser.
 - **Model Context Protocol (MCP)** support to integrate with AI agents.
 - **Cypher query support**: Query search results with Cypher (graph query language).
+- **Claude Code Plugin**: Skills for searching and fetching papers directly from Claude.
 - **Robust formatting**: Uses structured JSON for easy machine consumption.
 
 ## Installation
@@ -126,6 +127,37 @@ Add this to your `claude_desktop_config.json`:
     }
   }
 }
+```
+
+## Claude Code Plugin
+
+The arxiv-cli Claude Code Plugin provides skills for searching and fetching papers directly from Claude.
+
+### Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| `arxiv-search` | Search arXiv for papers matching a query |
+| `arxiv-fetch` | Fetch details of a specific paper by arXiv ID |
+
+### Usage
+
+```
+arxiv-search "LLM" 10
+arxiv-fetch "2301.00001"
+```
+
+### Plugin Structure
+
+```
+.claude-plugin/
+  marketplace.json          # Marketplace configuration
+claude-plugin/
+  .claude-plugin/
+    plugin.json             # Plugin definition with MCP servers
+  skills/
+    arxiv-search/SKILL.md   # Skill definition
+    arxiv-fetch/SKILL.md    # Skill definition
 ```
 
 ## CLI Usage
