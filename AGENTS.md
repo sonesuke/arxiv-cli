@@ -49,3 +49,62 @@ mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
 | `mise run test` | Run tests with `cargo test` |
 | `mise run pre-commit` | Run all of the above |
 | `mise run coverage` | Measure code coverage (including subprocesses) |
+
+## Skill-Bench Testing Framework
+
+Located in `agents/skill-bench/`, this framework tests the Claude Code Plugin skills.
+
+### Structure
+
+```
+agents/skill-bench/
+  runner.sh           # Test runner
+  cases/              # Test case definitions (TOML format)
+    arxiv-search/
+      triggering.toml
+      functional.toml
+      functional-with-limit.toml
+    arxiv-fetch/
+      triggering.toml
+      functional.toml
+  tools/              # Check scripts
+    check-mcp-loaded.sh
+    check-mcp-success.sh
+    check-skill-invoked.sh
+    check-skill-loaded.sh
+    check-param.sh
+    check-workspace.sh
+```
+
+### Test Cases
+
+Each test case is defined in TOML format:
+
+```toml
+description = "Test description"
+check = "check-script-name"
+
+[test_prompt]
+text = "The prompt that should trigger the skill"
+
+[[tool_calls]]
+name = "tool_name"
+arguments = { param = "value" }
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+cd agents/skill-bench
+./runner.sh
+
+# Run specific skill tests
+./runner.sh "arxiv-search"
+./runner.sh "arxiv-fetch"
+
+# Run multiple trials
+./runner.sh "*" trials=3
+```
+
+**Note:** Test prompts must be in English to ensure consistent skill triggering.
