@@ -1,24 +1,14 @@
 {
   "name": "arxiv-cli",
-  "description": "Search and fetch papers from arXiv with Cypher query support",
-  "version": "0.1.4",
+  "description": "arXiv CLI - Search and analyze papers from arXiv with Cypher query support",
+  "version": "0.1.5",
+  "author": {
+    "name": "sonesuke"
+  },
   "mcpServers": {
     "arxiv-cli": {
       "command": "arxiv-cli",
-      "args": ["mcp"],
-      "description": "MCP server for arXiv paper search and fetch with Cypher query support"
+      "args": ["mcp"]
     }
-  },
-  "skills": [
-    {
-      "name": "arxiv-search",
-      "description": "Search arXiv for papers matching a query",
-      "file": "skills/arxiv-search/SKILL.md"
-    },
-    {
-      "name": "arxiv-fetch",
-      "description": "Fetch details of a specific paper from arXiv",
-      "file": "skills/arxiv-fetch/SKILL.md"
-    }
-  ]
+  }
 }
