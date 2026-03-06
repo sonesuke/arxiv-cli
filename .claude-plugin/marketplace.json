@@ -1,22 +1,17 @@
 {
-  "title": "arXiv CLI",
-  "id": "com.sonesuke.arxiv-cli",
-  "description": "CLI tool for searching and fetching papers from arXiv with Cypher query support",
-  "icon": "https://github.com/sonesuke.png",
-  "author": {
-    "name": "sonesuke",
-    "contact": "https://github.com/sonesuke"
+  "name": "arxiv-cli-marketplace",
+  "owner": {
+    "name": "sonesuke"
   },
-  "license": "MIT",
-  "categories": ["Developer Tools", "Research"],
-  "tags": ["arxiv", "research", "papers", "academic", "search"],
-  "readme": "https://github.com/sonesuke/arxiv-cli/blob/main/README.md",
-  "homepage": "https://github.com/sonesuke/arxiv-cli",
-  "repository": "https://github.com/sonesuke/arxiv-cli",
-  "references": [
+  "plugins": [
     {
-      "type": "github",
-      "url": "https://github.com/sonesuke/arxiv-cli"
+      "name": "arxiv-cli",
+      "description": "arXiv CLI - Search and analyze papers from arXiv with Cypher query support",
+      "version": "0.1.5",
+      "author": {
+        "name": "sonesuke"
+      },
+      "source": "./claude-plugin"
     }
   ]
 }
