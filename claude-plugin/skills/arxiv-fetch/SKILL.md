@@ -1,3 +1,13 @@
+---
+name: arxiv-fetch
+description: "Get complete paper details including title, authors, summary, abstract, and publication date from arXiv. Use when the user provides an arXiv ID and needs full paper information."
+metadata:
+  author: sonesuke
+  version: 1.0.0
+context: fork
+agent: general-purpose
+---
+
 # ArXiv Fetch
 
 Fetch detailed information about a specific paper from arXiv by its ID.
