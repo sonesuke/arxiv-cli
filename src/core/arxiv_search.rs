@@ -58,6 +58,19 @@ impl ArxivClient {
 
             tab.goto(&url).await?;
 
+            // Wait for page to load
+            let wait_start = std::time::Instant::now();
+            while wait_start.elapsed().as_secs() < 30 {
+                if let Ok(ready_state) = tab.evaluate("document.readyState").await
+                    && let Some(state) = ready_state.as_str()
+                    && (state == "complete" || state == "interactive")
+                {
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+
             // Wait for results to load or check if no results
             let wait_script = include_str!("scripts/check_search_results.js");
 
@@ -143,6 +156,19 @@ impl ArxivClient {
         let url = Self::build_fetch_url(id);
 
         tab.goto(&url).await?;
+
+        // Wait for page to load
+        let wait_start = std::time::Instant::now();
+        while wait_start.elapsed().as_secs() < 30 {
+            if let Ok(ready_state) = tab.evaluate("document.readyState").await
+                && let Some(state) = ready_state.as_str()
+                && (state == "complete" || state == "interactive")
+            {
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
 
         if !tab.wait_for_element("h1.title", 10).await? {
             return Err(ArxivError::Extraction(

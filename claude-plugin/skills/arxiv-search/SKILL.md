@@ -1,3 +1,13 @@
+---
+name: arxiv-search
+description: "Search arXiv for academic papers by query, with optional limit and date filters. Results are cached and can be analyzed with Cypher queries."
+metadata:
+  author: sonesuke
+  version: 1.0.0
+context: fork
+agent: general-purpose
+---
+
 # ArXiv Search
 
 Search arXiv for academic papers matching your query. Results are cached for efficient repeated queries.
