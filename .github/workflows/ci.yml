@@ -23,6 +23,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
       - name: Setup Chrome configuration
         run: |
           # Check if Chrome exists in standard locations
@@ -50,11 +53,12 @@ jobs:
       - name: Check formatting
         run: cargo fmt -- --check
 
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
+      - name: Build and lint
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Run tests
         run: cargo test
 
-      - name: Check build
-        run: cargo check --release
+      - name: Lint (release) - main branch only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cargo clippy --release -- -D warnings
