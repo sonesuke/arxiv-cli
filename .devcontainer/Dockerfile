@@ -13,8 +13,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     pkg-config \
     libssl-dev \
     ripgrep \
-    tmux \
-    vim \
     jq \
     sudo \
     build-essential \

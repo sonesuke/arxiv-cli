@@ -37,6 +37,10 @@ pub enum Commands {
         /// Filter by date (before), YYYY-MM-DD
         #[arg(long)]
         before: Option<String>,
+
+        /// Filter by category (e.g., cs.AI, physics.cond-mat, math.NA)
+        #[arg(long)]
+        category: Option<String>,
     },
     /// Fetch paper details by ID
     Fetch {
@@ -107,8 +111,8 @@ pub async fn run() -> anyhow::Result<()> {
     let client = ArxivClient::new(&config).await?;
 
     match cli.command {
-        Commands::Search { query, limit, after, before } => {
-            let papers = client.search(&query, limit, after, before, cli.verbose).await?;
+        Commands::Search { query, limit, after, before, category } => {
+            let papers = client.search(&query, limit, after, before, category, cli.verbose).await?;
             let json = serde_json::to_string_pretty(&papers)?;
             println!("{}", json);
         }

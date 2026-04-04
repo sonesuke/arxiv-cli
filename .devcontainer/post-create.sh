@@ -19,13 +19,6 @@ if [ -z "$CI" ] && [ -z "$GITHUB_ACTIONS" ]; then
         echo "[Devcontainer Setup] Claude CLI already installed: $(claude --version)"
     fi
 
-    echo "[Devcontainer Setup] Configuring tmux..."
-    cat > $HOME/.tmux.conf << 'EOF'
-# Display pane number
-bind-key p display-panes
-set display-panes-time 10000
-EOF
-
     echo "[Devcontainer Setup] Configuring claude alias..."
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.bashrc
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.zshrc
@@ -63,8 +56,8 @@ EOF
         "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
         "API_TIMEOUT_MS": "3000000",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5",
-        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.1",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5-turbo",
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air"
     }
 }
