@@ -187,9 +187,10 @@ impl ArxivHandler {
             })?;
 
         // Create CypherEngine with auto-detection
-        let json_value: serde_json::Value = serde_json::to_value(&papers).map_err(|e| {
-            ErrorData::internal_error(format!("Failed to serialize papers: {}", e), None)
-        })?;
+        // Wrap in object so cypher-rs can detect a named node path
+        let json_value = serde_json::json!({
+            "papers": &papers
+        });
 
         let engine = CypherEngine::from_json_auto(&json_value).map_err(|e| {
             ErrorData::internal_error(format!("Failed to create query engine: {}", e), None)
@@ -260,12 +261,13 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to save PDF: {}", e), None)
             })?;
 
-            // Create CypherEngine from the result (wrap in array)
-            let result = serde_json::json!({
-                "id": request.id,
-                "pdf_path": temp_path.display().to_string(),
+            // Create CypherEngine from the result (wrap in object with named key)
+            let json_value = serde_json::json!({
+                "results": [{
+                    "id": request.id,
+                    "pdf_path": temp_path.display().to_string(),
+                }]
             });
-            let json_value = serde_json::json!([result]);
             CypherEngine::from_json_auto(&json_value).map_err(|e| {
                 ErrorData::internal_error(format!("Failed to create query engine: {}", e), None)
             })?
@@ -275,13 +277,12 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to fetch paper: {}", e), None)
             })?;
 
-            // Create CypherEngine from the paper (wrap in array)
-            let json_value = serde_json::to_value(&paper).map_err(|e| {
-                ErrorData::internal_error(format!("Failed to serialize paper: {}", e), None)
-            })?;
-            let paper_array = serde_json::json!([json_value]);
+            // Create CypherEngine from the paper (wrap in object with named key)
+            let json_value = serde_json::json!({
+                "papers": [&paper]
+            });
 
-            CypherEngine::from_json_auto(&paper_array).map_err(|e| {
+            CypherEngine::from_json_auto(&json_value).map_err(|e| {
                 ErrorData::internal_error(format!("Failed to create query engine: {}", e), None)
             })?
         };
