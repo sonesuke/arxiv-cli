@@ -186,6 +186,18 @@ impl ArxivHandler {
                 ErrorData::internal_error(format!("Failed to search arXiv: {}", e), None)
             })?;
 
+        // Return early if no results — CypherEngine cannot build from empty array
+        if papers.is_empty() {
+            let result = serde_json::json!({
+                "dataset": dataset,
+                "count": 0,
+                "message": "No papers found matching the query"
+            });
+            return serde_json::to_string_pretty(&result).map_err(|e| {
+                ErrorData::internal_error(format!("Failed to serialize result: {}", e), None)
+            });
+        }
+
         // Create CypherEngine with auto-detection
         // Wrap in object so cypher-rs can detect a named node path
         let json_value = serde_json::json!({

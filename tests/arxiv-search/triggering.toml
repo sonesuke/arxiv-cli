@@ -1,0 +1,11 @@
+name = "arxiv-search-triggering"
+description = "Verify arxiv-search skill is triggered when searching for papers"
+timeout = 120
+
+test_prompt = """
+Use arxiv-search to find papers about LLM
+"""
+
+[[checks]]
+name = "skill-invoked"
+command = { command = "skill-invoked", skill = "arxiv-search" }

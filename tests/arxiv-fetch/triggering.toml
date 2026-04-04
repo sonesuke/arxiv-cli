@@ -1,0 +1,11 @@
+name = "arxiv-fetch-triggering"
+description = "Verify arxiv-fetch skill is triggered when fetching a paper"
+timeout = 120
+
+test_prompt = """
+Use arxiv-fetch to get paper 2301.00001
+"""
+
+[[checks]]
+name = "skill-invoked"
+command = { command = "skill-invoked", skill = "arxiv-fetch" }

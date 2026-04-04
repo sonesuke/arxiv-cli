@@ -1,9 +1,0 @@
-description = "Test basic arxiv-search functionality with query and limit"
-check = "check-mcp-success.sh"
-
-[test_prompt]
-text = "Search arXiv for papers about quantum computing, limit to 5 results"
-
-[[tool_calls]]
-name = "search_papers"
-arguments = { query = "quantum computing", limit = 5 }

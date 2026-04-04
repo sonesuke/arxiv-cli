@@ -49,62 +49,32 @@ mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
 | `mise run test` | Run tests with `cargo test` |
 | `mise run pre-commit` | Run all of the above |
 | `mise run coverage` | Measure code coverage (including subprocesses) |
+| `mise run skill-test` | Run all skill-bench tests |
 
 ## Skill-Bench Testing Framework
 
-Located in `agents/skill-bench/`, this framework tests the Claude Code Plugin skills.
+Test cases are in `tests/`.
 
-### Structure
-
-```
-agents/skill-bench/
-  runner.sh           # Test runner
-  cases/              # Test case definitions (TOML format)
-    arxiv-search/
-      triggering.toml
-      functional.toml
-      functional-with-limit.toml
-    arxiv-fetch/
-      triggering.toml
-      functional.toml
-  tools/              # Check scripts
-    check-mcp-loaded.sh
-    check-mcp-success.sh
-    check-skill-invoked.sh
-    check-skill-loaded.sh
-    check-param.sh
-    check-workspace.sh
-```
-
-### Test Cases
-
-Each test case is defined in TOML format:
+Requires [skill-bench](https://github.com/sonesuke/skill-bench) (set up via post-create script).
 
 ```toml
+name = "test-name"
 description = "Test description"
-check = "check-script-name"
+timeout = 120
 
-[test_prompt]
-text = "The prompt that should trigger the skill"
+test_prompt = """
+English prompt that should trigger the skill
+"""
 
-[[tool_calls]]
-name = "tool_name"
-arguments = { param = "value" }
+[[checks]]
+name = "check-name"
+command = { command = "mcp-success", tool = "tool_name" }
+
+[[checks]]
+name = "param-check"
+command = { command = "tool-param", tool = "tool_name", param = "limit", value = "20" }
 ```
 
-### Running Tests
-
-```bash
-# Run all tests
-cd agents/skill-bench
-./runner.sh
-
-# Run specific skill tests
-./runner.sh "arxiv-search"
-./runner.sh "arxiv-fetch"
-
-# Run multiple trials
-./runner.sh "*" trials=3
-```
+Available check types: `mcp-success`, `mcp-tool-invoked`, `mcp-loaded`, `tool-use`, `tool-param`, `skill-invoked`, `skill-loaded`, `workspace-file`, `workspace-dir`, `file-contains`, `log-contains`, `message-contains`, `db-query`.
 
 **Note:** Test prompts must be in English to ensure consistent skill triggering.

@@ -1,0 +1,27 @@
+name = "arxiv-fetch-functional"
+description = "Test basic arxiv-fetch functionality"
+timeout = 120
+
+test_prompt = """
+Use arxiv-fetch to get paper 2301.00001
+"""
+
+[[checks]]
+name = "skill-invoked"
+command = { command = "skill-invoked", skill = "arxiv-fetch" }
+
+[[checks]]
+name = "mcp-success"
+command = { command = "mcp-success", tool = "fetch_paper" }
+
+[[checks]]
+name = "id-param"
+command = { command = "tool-param", tool = "fetch_paper", param = "id", value = "2301.00001" }
+
+[[checks]]
+name = "cypher-invoked"
+command = { command = "mcp-tool-invoked", tool = "execute_cypher" }
+
+[[checks]]
+name = "cypher-success"
+command = { command = "mcp-success", tool = "execute_cypher" }

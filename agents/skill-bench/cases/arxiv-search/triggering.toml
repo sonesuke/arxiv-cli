@@ -1,9 +1,0 @@
-description = "Verify arxiv-search skill is triggered when searching for papers"
-check = "check-skill-invoked.sh"
-
-[test_prompt]
-text = "Use arxiv-search to find papers about LLM"
-
-[[tool_calls]]
-name = "arxiv-search"
-arguments = { query = "LLM" }
