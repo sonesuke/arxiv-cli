@@ -73,6 +73,14 @@ browser_path = "/usr/bin/chromium"
 chrome_args = ["--no-sandbox", "--disable-gpu"]
 EOF
 
+    # Install skill-bench
+    if ! command -v skill-bench >/dev/null 2>&1; then
+        echo "[Devcontainer Setup] Installing skill-bench..."
+        curl -fsSL https://raw.githubusercontent.com/sonesuke/skill-bench/main/scripts/setup.sh | sh
+    else
+        echo "[Devcontainer Setup] skill-bench already installed: $(skill-bench --version 2>/dev/null || echo 'unknown')"
+    fi
+
     echo "[Devcontainer Setup] Complete!"
 else
     echo "Running in CI environment, skipping development setup..."
