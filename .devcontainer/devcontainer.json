@@ -15,6 +15,10 @@
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/git:1": {}
 	},
+	"mounts": [
+		"source=${localEnv:USERPROFILE}${localEnv:HOME}/.gh,target=/home/vscode/.gh,type=bind,consistency=cached",
+		"source=${localEnv:USERPROFILE}${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached"
+	],
 	"customizations": {
 		"vscode": {}
 	},
