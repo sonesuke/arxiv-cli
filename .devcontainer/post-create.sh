@@ -19,13 +19,6 @@ if [ -z "$CI" ] && [ -z "$GITHUB_ACTIONS" ]; then
         echo "[Devcontainer Setup] Claude CLI already installed: $(claude --version)"
     fi
 
-    echo "[Devcontainer Setup] Configuring tmux..."
-    cat > $HOME/.tmux.conf << 'EOF'
-# Display pane number
-bind-key p display-panes
-set display-panes-time 10000
-EOF
-
     echo "[Devcontainer Setup] Configuring claude alias..."
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.bashrc
     echo 'alias claude="claude --allow-dangerously-skip-permissions"' >> $HOME/.zshrc
@@ -79,16 +72,6 @@ headless = true
 browser_path = "/usr/bin/chromium"
 chrome_args = ["--no-sandbox", "--disable-gpu"]
 EOF
-
-    # Check GitHub CLI authentication
-    echo "[Devcontainer Setup] Checking GitHub CLI authentication..."
-    if [ -f "$HOME/.gh/hosts.yml" ] && command -v gh >/dev/null 2>&1; then
-        echo "[Devcontainer Setup] GitHub CLI is authenticated."
-        gh auth status
-    else
-        echo "[Devcontainer Setup] GitHub CLI is not authenticated."
-        echo "[Devcontainer Setup] Run 'gh auth login' to authenticate."
-    fi
 
     echo "[Devcontainer Setup] Complete!"
 else
