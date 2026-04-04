@@ -17,3 +17,6 @@ cargo llvm-cov clean --workspace
 cargo test
 cargo llvm-cov report --summary-only
 """
+
+[tasks.skill-test]
+run = "cd agents/skill-bench && skill-bench run"

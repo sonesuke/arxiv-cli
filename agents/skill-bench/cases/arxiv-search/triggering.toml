@@ -8,5 +8,4 @@ Use arxiv-search to find papers about LLM
 
 [[checks]]
 name = "skill-invoked"
-command = "skill-invoked"
-skill = "arxiv-search"
+command = { command = "skill-invoked", skill = "arxiv-search" }

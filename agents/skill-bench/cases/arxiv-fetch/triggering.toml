@@ -8,5 +8,4 @@ Use arxiv-fetch to get paper 2301.00001
 
 [[checks]]
 name = "skill-invoked"
-command = "skill-invoked"
-skill = "arxiv-fetch"
+command = { command = "skill-invoked", skill = "arxiv-fetch" }

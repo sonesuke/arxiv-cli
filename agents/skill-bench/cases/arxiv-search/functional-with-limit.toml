@@ -8,11 +8,8 @@ Use arxiv-search to find 20 papers about machine learning
 
 [[checks]]
 name = "mcp-success"
-command = "mcp-success"
+command = { command = "mcp-success", tool = "search_papers" }
 
 [[checks]]
 name = "limit-param"
-command = "param"
-tool = "search_papers"
-param = "limit"
-value = "20"
+command = { command = "tool-param", tool = "search_papers", param = "limit", value = "20" }

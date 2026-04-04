@@ -8,4 +8,4 @@ Search arXiv for papers about quantum computing, limit to 5 results
 
 [[checks]]
 name = "mcp-success"
-command = "mcp-success"
+command = { command = "mcp-success", tool = "search_papers" }

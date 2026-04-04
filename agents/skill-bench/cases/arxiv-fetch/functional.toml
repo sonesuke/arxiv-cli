@@ -8,4 +8,4 @@ Fetch the paper with arXiv ID 2301.00001
 
 [[checks]]
 name = "mcp-success"
-command = "mcp-success"
+command = { command = "mcp-success", tool = "fetch_paper" }
