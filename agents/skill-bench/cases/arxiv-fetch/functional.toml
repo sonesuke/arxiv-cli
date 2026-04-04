@@ -1,9 +1,11 @@
+name = "arxiv-fetch-functional"
 description = "Test basic arxiv-fetch functionality"
-check = "check-mcp-success.sh"
+timeout = 120
 
-[test_prompt]
-text = "Fetch the paper with arXiv ID 2301.00001"
+test_prompt = """
+Fetch the paper with arXiv ID 2301.00001
+"""
 
-[[tool_calls]]
-name = "fetch_paper"
-arguments = { id = "2301.00001" }
+[[checks]]
+name = "mcp-success"
+command = "mcp-success"

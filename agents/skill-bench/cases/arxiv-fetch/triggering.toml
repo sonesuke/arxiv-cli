@@ -1,9 +1,12 @@
+name = "arxiv-fetch-triggering"
 description = "Verify arxiv-fetch skill is triggered when fetching a paper"
-check = "check-skill-invoked.sh"
+timeout = 120
 
-[test_prompt]
-text = "Use arxiv-fetch to get paper 2301.00001"
+test_prompt = """
+Use arxiv-fetch to get paper 2301.00001
+"""
 
-[[tool_calls]]
-name = "arxiv-fetch"
-arguments = { arxiv_id = "2301.00001" }
+[[checks]]
+name = "skill-invoked"
+command = "skill-invoked"
+skill = "arxiv-fetch"

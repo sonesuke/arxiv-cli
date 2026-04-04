@@ -1,9 +1,18 @@
+name = "arxiv-search-functional-with-limit"
 description = "Test arxiv-search with custom limit parameter"
-check = "check-mcp-success.sh"
+timeout = 120
 
-[test_prompt]
-text = "Use arxiv-search to find 20 papers about machine learning"
+test_prompt = """
+Use arxiv-search to find 20 papers about machine learning
+"""
 
-[[tool_calls]]
-name = "search_papers"
-arguments = { query = "machine learning", limit = 20 }
+[[checks]]
+name = "mcp-success"
+command = "mcp-success"
+
+[[checks]]
+name = "limit-param"
+command = "param"
+tool = "search_papers"
+param = "limit"
+value = "20"
