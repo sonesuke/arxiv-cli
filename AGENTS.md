@@ -49,21 +49,13 @@ mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
 | `mise run test` | Run tests with `cargo test` |
 | `mise run pre-commit` | Run all of the above |
 | `mise run coverage` | Measure code coverage (including subprocesses) |
+| `mise run skill-test` | Run all skill-bench tests |
 
 ## Skill-Bench Testing Framework
 
-Located in `agents/skill-bench/`, tests Claude Code Plugin skills using [skill-bench](https://github.com/sonesuke/skill-bench).
+Test cases are in `tests/`.
 
-Requires `skill-bench` to be installed (set up via post-create script).
-
-| Command | Description |
-|---|---|
-| `mise run skill-test` | Run all tests |
-| `skill-bench list` | List discovered tests |
-
-### Test Case Format
-
-Each test case is a TOML file under `agents/skill-bench/cases/`:
+Requires [skill-bench](https://github.com/sonesuke/skill-bench) (set up via post-create script).
 
 ```toml
 name = "test-name"

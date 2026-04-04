@@ -19,4 +19,4 @@ cargo llvm-cov report --summary-only
 """
 
 [tasks.skill-test]
-run = "cd agents/skill-bench && skill-bench run"
+run = "skill-bench run tests --plugin-dir claude-plugin"
