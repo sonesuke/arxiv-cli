@@ -1,9 +1,9 @@
-name = "arxiv-fetch-functional"
-description = "Test basic arxiv-fetch functionality"
+name = "arxiv-fetch-functional-with-raw"
+description = "Test arxiv-fetch with raw PDF download"
 timeout = 120
 
 test_prompt = """
-Use arxiv-fetch to get paper 2301.00001
+Use arxiv-fetch to download the PDF for paper 2301.00001
 """
 
 [[checks]]
