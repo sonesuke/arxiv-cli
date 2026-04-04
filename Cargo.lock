@@ -413,7 +413,7 @@ dependencies = [
 [[package]]
 name = "cypher-rs"
 version = "0.1.0"
-source = "git+https://github.com/sonesuke/cypher-rs?branch=main#09afd652bc858022c04ad04a2aa083a3ccd231ab"
+source = "git+https://github.com/sonesuke/cypher-rs?branch=main#ab6fdb71e5f7f8e8f1a04b3afcd707b724fb76b0"
 dependencies = [
  "anyhow",
  "async-trait",
