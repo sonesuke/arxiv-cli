@@ -63,8 +63,8 @@ EOF
         "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
         "API_TIMEOUT_MS": "3000000",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5",
-        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.1",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5-turbo",
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air"
     }
 }
@@ -79,6 +79,16 @@ headless = true
 browser_path = "/usr/bin/chromium"
 chrome_args = ["--no-sandbox", "--disable-gpu"]
 EOF
+
+    # Check GitHub CLI authentication
+    echo "[Devcontainer Setup] Checking GitHub CLI authentication..."
+    if [ -f "$HOME/.gh/hosts.yml" ] && command -v gh >/dev/null 2>&1; then
+        echo "[Devcontainer Setup] GitHub CLI is authenticated."
+        gh auth status
+    else
+        echo "[Devcontainer Setup] GitHub CLI is not authenticated."
+        echo "[Devcontainer Setup] Run 'gh auth login' to authenticate."
+    fi
 
     echo "[Devcontainer Setup] Complete!"
 else
