@@ -24,6 +24,7 @@ impl ArxivClient {
         limit: Option<usize>,
         after: Option<String>,
         before: Option<String>,
+        category: Option<String>,
         verbose: bool,
     ) -> Result<Vec<Paper>> {
         let mut all_papers = Vec::new();
@@ -33,7 +34,10 @@ impl ArxivClient {
 
         if verbose {
             eprintln!("[VERBOSE] Starting search for query: '{}'", query);
-            eprintln!("[VERBOSE] limit={:?}, after={:?}, before={:?}", limit, after, before);
+            eprintln!(
+                "[VERBOSE] limit={:?}, after={:?}, before={:?}, category={:?}",
+                limit, after, before, category
+            );
         }
 
         loop {
@@ -50,7 +54,7 @@ impl ArxivClient {
 
             let tab = CdpPage::new(&ws_url).await?;
 
-            let url = Self::build_search_url(query, start, &after, &before);
+            let url = Self::build_search_url(query, start, &after, &before, category.as_deref());
 
             if verbose {
                 eprintln!("[VERBOSE] Navigating to: {}", url);
@@ -253,14 +257,83 @@ impl ArxivClient {
         start: usize,
         after: &Option<String>,
         before: &Option<String>,
+        category: Option<&str>,
     ) -> String {
         let encoded_query = urlencoding::encode(query);
-        if after.is_some() || before.is_some() {
+
+        // Build category filter if specified
+        let category_filter = if let Some(cat) = category {
+            // Map category to arXiv archive parameter
+            // Examples: cs.AI -> computer_science, physics.cond-mat -> physics
+            let archive_name =
+                if let Some(dot_idx) = cat.find('.') { &cat[..dot_idx] } else { cat };
+
+            let archive_param = match archive_name {
+                "cs" => "computer_science",
+                "physics" => "physics",
+                "math" => "math",
+                "stat" => "statistics",
+                "q-bio" => "q-bio",
+                "q-fin" => "q-fin",
+                "econ" => "economics",
+                "eess" => "eess",
+                "astro-ph" => "physics",
+                "cond-mat" => "physics",
+                "gr-qc" => "physics",
+                "hep-ex" => "physics",
+                "hep-lat" => "physics",
+                "hep-ph" => "physics",
+                "hep-th" => "physics",
+                "nucl-ex" => "physics",
+                "nucl-th" => "physics",
+                "quant-ph" => "physics",
+                "acc-phys" => "physics",
+                "adapt" => "physics",
+                "ao" => "physics",
+                "atom" => "physics",
+                "atm-clus" => "physics",
+                "bell" => "physics",
+                "chem-ph" => "physics",
+                "comp-gas" => "physics",
+                "data-an" => "physics",
+                "dis-nn" => "physics",
+                "fluid" => "physics",
+                "gen-ph" => "physics",
+                "geo-ph" => "physics",
+                "hist-ph" => "physics",
+                "ins" => "physics",
+                "med-ph" => "physics",
+                "net-si" => "physics",
+                "other" => "physics",
+                "plasm-ph" => "physics",
+                "pop" => "physics",
+                "proxy" => "physics",
+                "soc-ph" => "physics",
+                "space-ph" => "physics",
+                _ => archive_name,
+            };
+
+            // For full category names like "cs.AI", use the full category
+            // For subcategories like "cond-mat", prepend with "physics."
+            let full_category = if cat.contains('.') {
+                cat.to_string()
+            } else if archive_param == "physics" {
+                format!("physics.{}", cat)
+            } else {
+                format!("{}.{}", archive_param, cat)
+            };
+
+            format!("&classification-{}_archives={}", archive_param, full_category)
+        } else {
+            String::new()
+        };
+
+        if after.is_some() || before.is_some() || category.is_some() {
             let from_date = after.as_deref().unwrap_or("");
             let to_date = before.as_deref().unwrap_or("");
             format!(
-                "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term={}&terms-0-field=all&classification-physics_archives=all&classification-include_cross_list=include&date-filter_by=date_range&date-from_date={}&date-to_date={}&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first&start={}",
-                encoded_query, from_date, to_date, start
+                "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term={}&terms-0-field=all&classification-physics_archives=all&classification-include_cross_list=include{}&date-filter_by=date_range&date-from_date={}&date-to_date={}&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first&start={}",
+                encoded_query, category_filter, from_date, to_date, start
             )
         } else {
             format!(
@@ -285,13 +358,13 @@ mod tests {
 
     #[test]
     fn test_build_search_url_simple() {
-        let url = ArxivClient::build_search_url("LLM", 0, &None, &None);
+        let url = ArxivClient::build_search_url("LLM", 0, &None, &None, None);
         assert_eq!(url, "https://arxiv.org/search/?query=LLM&searchtype=all&source=header&start=0");
     }
 
     #[test]
     fn test_build_search_url_with_pagination() {
-        let url = ArxivClient::build_search_url("LLM", 50, &None, &None);
+        let url = ArxivClient::build_search_url("LLM", 50, &None, &None, None);
         assert_eq!(
             url,
             "https://arxiv.org/search/?query=LLM&searchtype=all&source=header&start=50"
@@ -302,10 +375,29 @@ mod tests {
     fn test_build_search_url_with_dates() {
         let after = Some("2023-01-01".to_string());
         let before = Some("2023-12-31".to_string());
-        let url = ArxivClient::build_search_url("LLM", 0, &after, &before);
+        let url = ArxivClient::build_search_url("LLM", 0, &after, &before, None);
         assert!(url.contains("date-filter_by=date_range"));
         assert!(url.contains("date-from_date=2023-01-01"));
         assert!(url.contains("date-to_date=2023-12-31"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_category_cs() {
+        let url = ArxivClient::build_search_url("LLM", 0, &None, &None, Some("cs.AI"));
+        assert!(url.contains("classification-computer_science_archives=cs.AI"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_category_physics() {
+        let url =
+            ArxivClient::build_search_url("quantum", 0, &None, &None, Some("physics.quant-ph"));
+        assert!(url.contains("classification-physics_archives=physics.quant-ph"));
+    }
+
+    #[test]
+    fn test_build_search_url_with_category_math() {
+        let url = ArxivClient::build_search_url("algebra", 0, &None, &None, Some("math.NA"));
+        assert!(url.contains("classification-math_archives=math.NA"));
     }
 
     #[test]
@@ -323,7 +415,8 @@ mod tests {
     #[test]
     fn test_build_search_url_with_before_only() {
         let before = Some("2023-10-13".to_string());
-        let url = ArxivClient::build_search_url("conversational data analysis", 0, &None, &before);
+        let url =
+            ArxivClient::build_search_url("conversational data analysis", 0, &None, &before, None);
         assert!(url.contains("date-filter_by=date_range"));
         assert!(url.contains("date-from_date=&"));
         assert!(url.contains("date-to_date=2023-10-13"));

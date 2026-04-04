@@ -33,6 +33,12 @@ pub struct SearchPapersRequest {
     #[schemars(description = "Filter by date (submitted after), format: YYYY-MM-DD")]
     #[serde(default)]
     pub after: Option<String>,
+
+    #[schemars(
+        description = "Filter by arXiv category (e.g., 'cs.AI', 'physics.quant-ph', 'math.NA')"
+    )]
+    #[serde(default)]
+    pub category: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -63,6 +69,7 @@ struct SearchCacheKey {
     limit: Option<usize>,
     before: Option<String>,
     after: Option<String>,
+    category: Option<String>,
 }
 
 impl SearchCacheKey {
@@ -72,6 +79,7 @@ impl SearchCacheKey {
             limit: req.limit,
             before: req.before.clone(),
             after: req.after.clone(),
+            category: req.category.clone(),
         }
     }
 
@@ -170,6 +178,7 @@ impl ArxivHandler {
                 request.limit,
                 request.after.clone(),
                 request.before.clone(),
+                request.category.clone(),
                 false,
             )
             .await
