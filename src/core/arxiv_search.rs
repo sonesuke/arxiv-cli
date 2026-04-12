@@ -52,7 +52,7 @@ impl ArxivClient {
                 eprintln!("[VERBOSE] Created new page: {}", ws_url);
             }
 
-            let tab = CdpPage::new(&ws_url).await?;
+            let tab = CdpPage::new(&ws_url, std::time::Duration::from_secs(30)).await?;
 
             let url = Self::build_search_url(query, start, &after, &before, category.as_deref());
 
@@ -156,7 +156,7 @@ impl ArxivClient {
     pub async fn fetch(&self, id: &str) -> Result<Paper> {
         let browser = self.browser_manager.get_browser().await?;
         let ws_url = browser.new_page().await?;
-        let tab = CdpPage::new(&ws_url).await?;
+        let tab = CdpPage::new(&ws_url, std::time::Duration::from_secs(30)).await?;
         let url = Self::build_fetch_url(id);
 
         tab.goto(&url).await?;
