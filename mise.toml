@@ -1,16 +1,41 @@
+[tasks.build]
+description = "Build dev container image with nix"
+file = "scripts/build.sh"
+
+[tasks.up]
+description = "Start dev container"
+file = "scripts/up.sh"
+
+[tasks.down]
+description = "Stop and remove dev container"
+run = "docker stop arxiv-cli && docker rm arxiv-cli"
+
+[tasks.attach]
+description = "Attach to dev container"
+run = "docker exec -it -w /workspaces/arxiv-cli arxiv-cli /bin/zsh"
+
+[tasks.setup]
+description = "Setup environment inside running container (Rust, Claude CLI, etc.)"
+run = "docker exec -u 1000 arxiv-cli bash /workspaces/arxiv-cli/scripts/setup.sh"
+
 [tasks.fmt]
+description = "Check formatting with cargo fmt"
 run = "cargo fmt --all -- --check"
 
 [tasks.clippy]
+description = "Lint with cargo clippy"
 run = "cargo clippy --all-targets -- -D warnings"
 
 [tasks.test]
+description = "Run tests with cargo test"
 run = "RUSTFLAGS=\"-D warnings\" cargo test --all-targets"
 
 [tasks.pre-commit]
+description = "Run all of the above"
 depends = ["fmt", "clippy", "test"]
 
 [tasks.coverage]
+description = "Generate test coverage report"
 run = """
 eval "$(cargo llvm-cov show-env --sh)"
 cargo llvm-cov clean --workspace
@@ -19,4 +44,5 @@ cargo llvm-cov report --summary-only
 """
 
 [tasks.skill-test]
+description = "Run skill-bench tests"
 run = "cargo install --path . && skill-bench run tests --plugin-dir claude-plugin"
