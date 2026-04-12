@@ -36,8 +36,9 @@ agents/pr-healer/       # PR-Healer autonomous agent
   tools/                # Agent tools
     load-progress.sh    # Read past context (JSONL)
     record-progress.sh  # Write progress logs (JSONL)
+scripts/                # Build and setup scripts (build.sh, up.sh, setup.sh)
+flake.nix               # Nix flake for reproducible Docker image
 mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
-.devcontainer/          # Dev container configuration
 ```
 
 ## Tools
@@ -51,11 +52,21 @@ mise.toml               # Task definitions (fmt, clippy, test, pre-commit)
 | `mise run coverage` | Measure code coverage (including subprocesses) |
 | `mise run skill-test` | Run all skill-bench tests |
 
+## Development Container
+
+The dev environment uses a Nix flake-based Docker image managed via mise tasks.
+
+- **Build**: `mise run build` — Build the Docker image with Nix
+- **Start**: `mise run up` — Start the dev container
+- **Setup**: `mise run setup` — Configure git, Rust, Claude CLI, MCP tools, and skills inside the container
+- **Attach**: `mise run attach` — Open a shell inside the running container
+- **Stop**: `mise run down` — Stop and remove the container
+
 ## Skill-Bench Testing Framework
 
 Test cases are in `tests/`.
 
-Requires [skill-bench](https://github.com/sonesuke/skill-bench) (set up via post-create script).
+Requires [skill-bench](https://github.com/sonesuke/skill-bench) (set up via `mise run setup`).
 
 ```toml
 name = "test-name"

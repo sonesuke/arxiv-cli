@@ -110,7 +110,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "arxiv-cli"
-version = "0.1.5"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -413,7 +413,7 @@ dependencies = [
 [[package]]
 name = "cypher-rs"
 version = "0.1.0"
-source = "git+https://github.com/sonesuke/cypher-rs?branch=main#ab6fdb71e5f7f8e8f1a04b3afcd707b724fb76b0"
+source = "git+https://github.com/sonesuke/cypher-rs?branch=main#0f8d18798a195aaef63eae4787311b6a6c1652a3"
 dependencies = [
  "anyhow",
  "async-trait",

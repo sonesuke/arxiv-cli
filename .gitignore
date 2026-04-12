@@ -4,3 +4,8 @@ agents/pr-healer/healer.log
 agents/pr-healer/progress.jsonl
 # Claude worktrees
 .claude/worktrees/
+logs/
+.skill-bench/
+
+# Nix build artifacts
+result
